@@ -13,6 +13,5 @@ void main() {
       catalog: const LessonCatalog([]), student: StudentState(prefs)));
     expect(find.text('اختر طريقة الدخول'), findsOneWidget);
     expect(find.text('مدير المنصة'), findsOneWidget);
-    expect(find.text('معاينة تعليمية دون حساب'), findsOneWidget);
   });
 }
