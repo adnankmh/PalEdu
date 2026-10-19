@@ -11,14 +11,19 @@ class QuizQuestion {
   factory QuizQuestion.fromJson(Map<String, dynamic> data) {
     final options = List<String>.from(data['options'] as List);
     final answer = data['answer'] as int;
-    if (options.length < 2 || answer < 0 || answer >= options.length) {
-      throw const FormatException('Invalid answer index');
+    final prompt = data['prompt'] as String;
+    final explanation = data['explanation'] as String;
+    if (options.length < 2 || answer < 0 || answer >= options.length ||
+        prompt.trim().isEmpty || explanation.trim().isEmpty ||
+        options.any((option) => option.trim().isEmpty) ||
+        options.map((option) => option.trim()).toSet().length != options.length) {
+      throw const FormatException('Invalid quiz question');
     }
     return QuizQuestion(
-      prompt: data['prompt'] as String,
+      prompt: prompt,
       options: options,
       correct: answer,
-      explanation: data['explanation'] as String,
+      explanation: explanation,
     );
   }
 }
@@ -37,17 +42,36 @@ class Lesson {
   final List<QuizQuestion> questions;
   final int duration;
 
-  factory Lesson.fromJson(Map<String, dynamic> data) => Lesson(
-    id: data['id'] as String, grade: data['grade'] as int,
-    track: data['track'] as String? ?? 'عام',
-    subject: data['subject'] as String,
-    title: data['title'] as String, summary: data['summary'] as String,
-    sections: List<String>.from(data['sections'] as List),
-    questions: (data['questions'] as List)
-      .map((q) => QuizQuestion.fromJson(Map<String, dynamic>.from(q as Map)))
-      .toList(growable: false),
-    duration: data['duration'] as int? ?? 7,
-  );
+  factory Lesson.fromJson(Map<String, dynamic> data) {
+    final questions = (data['questions'] as List)
+        .map((q) => QuizQuestion.fromJson(Map<String, dynamic>.from(q as Map)))
+        .toList(growable: false);
+    final sections = List<String>.from(data['sections'] as List);
+    final correctAnswers = questions
+        .map((question) => question.options[question.correct].trim()).toList();
+    if (questions.isEmpty || sections.isEmpty ||
+        sections.any((section) => section.trim().isEmpty) ||
+        correctAnswers.toSet().length != correctAnswers.length) {
+      // MatchPage uses the visible correct-answer text as the answer label.
+      // Identical labels would make two different matches indistinguishable.
+      throw const FormatException('Lesson needs nonempty, unambiguous activities');
+    }
+    final id = data['id'] as String;
+    final subject = data['subject'] as String;
+    final title = data['title'] as String;
+    final summary = data['summary'] as String;
+    final grade = data['grade'] as int;
+    final duration = data['duration'] as int? ?? 7;
+    if (id.trim().isEmpty || subject.trim().isEmpty || title.trim().isEmpty ||
+        summary.trim().isEmpty || grade < 1 || grade > 12 || duration <= 0) {
+      throw const FormatException('Invalid lesson metadata');
+    }
+    return Lesson(
+      id: id, grade: grade, track: data['track'] as String? ?? 'عام',
+      subject: subject, title: title, summary: summary,
+      sections: sections, questions: questions, duration: duration,
+    );
+  }
 }
 
 class LessonCatalog {
