@@ -78,6 +78,8 @@ create table if not exists public.paledu_resources (
   published_at timestamptz,
   constraint paledu_resource_source
     check ((asset_path is not null) or (external_url is not null)),
+  constraint paledu_asset_owner
+    check (asset_path is null or asset_path like created_by::text || '/%'),
   constraint paledu_publish_requires_rights
     check(status <> 'published' or
       (license_verified and length(trim(rights_note)) >= 10))
