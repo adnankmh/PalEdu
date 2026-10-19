@@ -1,0 +1,37 @@
+name: PalEdu - Curriculum RLS Integration
+on:
+  push:
+    paths:
+      - 'supabase/migrations/20261019000100_curriculum.sql'
+      - 'scripts/test_curriculum_rls.sql'
+      - '.github/workflows/backend-rls-integration.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgres-rls:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Verify published-only visibility and isolated progress
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: postgres
+        run: psql -v ON_ERROR_STOP=1 -f scripts/test_curriculum_rls.sql
