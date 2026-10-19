@@ -12,8 +12,8 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(PalEduApp(
       catalog: const LessonCatalog([]), student: StudentState(prefs)));
-    expect(find.text('مستقبلك يبدأ هنا'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField<int>), findsOneWidget);
-    expect(find.text('ابدأ رحلتي'), findsOneWidget);
+    expect(find.text('اختر طريقة الدخول'), findsOneWidget);
+    expect(find.text('مدير المنصة'), findsOneWidget);
+    expect(find.text('معاينة تعليمية دون حساب'), findsOneWidget);
   });
 }

@@ -1,0 +1,19 @@
+name: PalEdu Role and Content Security Guards
+on:
+  push:
+    paths:
+      - 'supabase/**'
+      - 'lib/portal/**'
+      - 'scripts/verify_role_security.py'
+      - '.github/workflows/security-guards.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check RBAC schema and client safety
+        run: python3 scripts/verify_role_security.py
