@@ -75,7 +75,7 @@ class _TeacherStudioState extends State<TeacherStudio> {
                 title:Text(item['title']?.toString()??''),
                 subtitle:Text((item['subject']?.toString()??'')+' • '+
                   (item['grade']?.toString()??'')),
-                trailing:Chip(label:Text(_status(item['status']?.toString()))))),
+                trailing:Chip(label:Text(_status(item['status']?.toString())))))),
           ]);
         }),
       const SizedBox(height:15),
@@ -113,7 +113,7 @@ class _ResourceComposerState extends State<ResourceComposer> {
   }
   Future<void> pick() async {
     try {
-      final result=await FilePicker.platform.pickFiles(
+      final result=await FilePicker.pickFiles(
         type:FileType.custom,
         allowedExtensions:['pdf','mp4','jpg','jpeg','png'],
         withData:true);

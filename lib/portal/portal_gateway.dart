@@ -294,7 +294,7 @@ class StudentCloudHub extends StatelessWidget {
           subtitle:const Text('مواد راجعها واعتمدها مدير المنصة'),
           trailing:const Icon(Icons.chevron_left),
           onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-            builder:(_)=>PublishedLibrary(grade:student.grade)))),
+            builder:(_)=>PublishedLibrary(grade:student.grade))))),
         const SizedBox(height:10),
         Panel(child:ListTile(
           leading:const Icon(Icons.emoji_events,color:PColors.teal),
@@ -302,7 +302,7 @@ class StudentCloudHub extends StatelessWidget {
           subtitle:const Text('الدروس والاختبارات والمراجعات والألعاب'),
           trailing:const Icon(Icons.chevron_left),
           onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-            builder:(_)=>OfflineLearning(student:student,catalog:catalog)))),
+            builder:(_)=>OfflineLearning(student:student,catalog:catalog))))),
         const SizedBox(height:10),
         Panel(child:ListTile(
           leading:const Icon(Icons.co_present_rounded,color:PColors.teal),
@@ -310,7 +310,7 @@ class StudentCloudHub extends StatelessWidget {
           subtitle:const Text('تتم مراجعة الطلب قبل تفعيل الصلاحيات'),
           trailing:const Icon(Icons.chevron_left),
           onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-            builder:(_)=>const EducatorRequestPage()))),
+            builder:(_)=>const EducatorRequestPage())))),
       ]))),
   );
 }
@@ -358,6 +358,6 @@ class _EducatorRequestPageState extends State<EducatorRequestPage> {
               const SnackBar(content:Text('تحقق من البيانات، أو من وجود طلب معلق')));
           } finally {if (mounted)setState(()=>sending=false);}
         },child:const Text('إرسال للمراجعة')),
-      ])))),
+      ]))),
   );
 }
