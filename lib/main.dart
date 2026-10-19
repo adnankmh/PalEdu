@@ -553,7 +553,7 @@ class _FlashPageState extends State<FlashPage> {
                       Text(q.explanation, textAlign: TextAlign.center),
                     ],
                   ]),
-              ))))),
+              )))))),
         const SizedBox(height: 14),
         Text(revealed ? 'اضغط لإخفاء الحل' : 'اضغط على البطاقة لاكتشاف الحل',
           textAlign: TextAlign.center),
