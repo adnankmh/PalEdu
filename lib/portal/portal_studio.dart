@@ -113,7 +113,7 @@ class _ResourceComposerState extends State<ResourceComposer> {
   }
   Future<void> pick() async {
     try {
-      final result=await FilePicker.pickFiles(
+      final result=await FilePicker.platform.pickFiles(
         type:FileType.custom,
         allowedExtensions:['pdf','mp4','jpg','jpeg','png'],
         withData:true);
