@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:paledu/main.dart';
@@ -12,8 +11,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(PalEduApp(
       catalog: const LessonCatalog([]), student: StudentState(prefs)));
-    expect(find.text('مستقبلك يبدأ هنا'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField<int>), findsOneWidget);
-    expect(find.text('ابدأ رحلتي'), findsOneWidget);
+    expect(find.text('اختر طريقة الدخول'), findsOneWidget);
+    expect(find.text('مدير المنصة'), findsOneWidget);
   });
 }

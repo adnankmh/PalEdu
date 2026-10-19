@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data/models.dart';
 import 'state/student_state.dart';
 import 'ui/design.dart';
+import 'portal/portal_service.dart';
+import 'portal/portal_gateway.dart';
+import 'portal/official_sources.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final json = await rootBundle.loadString('assets/curriculum/sample_lessons.json');
+  if (PortalConfig.enabled) {
+    await Supabase.initialize(url:PortalConfig.url,anonKey:PortalConfig.key);
+  }
   runApp(PalEduApp(student: StudentState(prefs), catalog: LessonCatalog.parse(json)));
 }
 
@@ -32,9 +39,10 @@ class PalEduApp extends StatelessWidget {
             textScaler: TextScaler.linear(student.scale)),
           child: child ?? const SizedBox.shrink(),
         )),
-      home: student.configured
-        ? HomeShell(student: student, catalog: catalog)
-        : SetupScreen(student: student),
+      home: PortalGateway(student:student,catalog:catalog,
+        preview: () => student.configured
+          ? HomeShell(student:student,catalog:catalog)
+          : SetupScreen(student:student)),
     ),
   );
 }
@@ -293,6 +301,14 @@ class _HomeShellState extends State<HomeShell> {
       Text('مكتبتي الدراسية', style: Theme.of(context).textTheme.headlineSmall
         ?.copyWith(fontWeight: FontWeight.w900)),
       const Text('دروس منظّمة حسب المادة والصف الدراسي'),
+      const SizedBox(height: 17),
+      Panel(child:ListTile(
+        leading:const Icon(Icons.verified_rounded,color:PColors.teal),
+        title:const Text('الرزم والكتب الفلسطينية الرسمية'),
+        subtitle:const Text('فتح فهرس وزارة التربية والتعليم'),
+        trailing:const Icon(Icons.open_in_new),
+        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+          builder:(_)=>const OfficialSourcesScreen())))),
       const SizedBox(height: 17),
       for (final entry in groups.entries) ...[
         Text(entry.key, style: const TextStyle(
