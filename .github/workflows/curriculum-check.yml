@@ -1,0 +1,17 @@
+name: PalEdu - Curriculum Integrity
+on:
+  push:
+    paths:
+      - "assets/curriculum/**"
+      - "scripts/validate_curriculum.py"
+      - ".github/workflows/curriculum-check.yml"
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/validate_curriculum.py

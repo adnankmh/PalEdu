@@ -1,0 +1,59 @@
+name: PalEdu - Flutter CI and Android APK
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Analyze / Test / Android APK / Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Android and Web native scaffolds
+        run: flutter create --org io.github.adnankmh --project-name paledu --platforms android,web .
+      - name: Configure Android name and Internet permission
+        run: python3 scripts/configure_android.py
+      - name: Download packages
+        run: flutter pub get
+      - name: Check curriculum structure
+        run: python3 scripts/validate_curriculum.py
+      - name: Flutter static analysis
+        run: flutter analyze --no-fatal-infos
+      - name: Flutter tests
+        run: flutter test --reporter expanded
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+      - name: Build web preview
+        run: flutter build web --release
+      - name: Upload debug Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PalEdu-Android-Debug-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: PalEdu-Web-Preview
+          path: build/web/
+          if-no-files-found: error
+          retention-days: 7

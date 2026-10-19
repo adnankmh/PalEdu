@@ -1,0 +1,17 @@
+.dart_tool/
+.packages
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.idea/
+*.iml
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+ios/Pods/
+.DS_Store
+coverage/
+.env
