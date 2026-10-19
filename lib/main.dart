@@ -7,6 +7,7 @@ import 'state/student_state.dart';
 import 'ui/design.dart';
 import 'portal/portal_service.dart';
 import 'portal/portal_gateway.dart';
+import 'portal/official_sources.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -300,6 +301,14 @@ class _HomeShellState extends State<HomeShell> {
       Text('مكتبتي الدراسية', style: Theme.of(context).textTheme.headlineSmall
         ?.copyWith(fontWeight: FontWeight.w900)),
       const Text('دروس منظّمة حسب المادة والصف الدراسي'),
+      const SizedBox(height: 17),
+      Panel(child:ListTile(
+        leading:const Icon(Icons.verified_rounded,color:PColors.teal),
+        title:const Text('الرزم والكتب الفلسطينية الرسمية'),
+        subtitle:const Text('فتح فهرس وزارة التربية والتعليم'),
+        trailing:const Icon(Icons.open_in_new),
+        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+          builder:(_)=>const OfficialSourcesScreen())))),
       const SizedBox(height: 17),
       for (final entry in groups.entries) ...[
         Text(entry.key, style: const TextStyle(

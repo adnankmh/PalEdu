@@ -7,6 +7,7 @@ import '../ui/design.dart';
 import '../main.dart' show HomeShell, SetupScreen;
 import 'portal_service.dart';
 import 'portal_studio.dart';
+import 'official_sources.dart';
 
 class PortalGateway extends StatefulWidget {
   const PortalGateway({super.key,required this.student,
@@ -110,6 +111,12 @@ class PortalWelcome extends StatelessWidget {
           'استوديو إنشاء الدروس ورفع الكتب والفيديوهات'),
         _role(context,Icons.admin_panel_settings_rounded,'مدير المنصة',
           'اعتماد المعلمين وإدارة ونشر المحتوى'),
+        const SizedBox(height:9),
+        OutlinedButton.icon(
+          onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>const OfficialSourcesScreen())),
+          icon:const Icon(Icons.verified_rounded),
+          label:const Text('المناهج والكتب من وزارة التربية والتعليم')),
         const SizedBox(height:9),
         if (!PortalConfig.enabled) ...[
           const Panel(child:Text('خدمة الحسابات لم تُربط بخادم بعد. يمكنك تجربة دروس الطالب دون تسجيل لحين إعداد قاعدة البيانات.')),
@@ -295,6 +302,14 @@ class StudentCloudHub extends StatelessWidget {
           trailing:const Icon(Icons.chevron_left),
           onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
             builder:(_)=>PublishedLibrary(grade:student.grade))))),
+        const SizedBox(height:10),
+        Panel(child:ListTile(
+          leading:const Icon(Icons.verified_rounded,color:PColors.teal),
+          title:const Text('مصادر المناهج الفلسطينية الرسمية'),
+          subtitle:const Text('رزم وكتب من وزارة التربية والتعليم'),
+          trailing:const Icon(Icons.open_in_new),
+          onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>const OfficialSourcesScreen())))),
         const SizedBox(height:10),
         Panel(child:ListTile(
           leading:const Icon(Icons.emoji_events,color:PColors.teal),
