@@ -238,6 +238,18 @@ class _HomeShellState extends State<HomeShell> {
         LinearProgressIndicator(value: progress, minHeight: 11,
           color: PColors.teal, backgroundColor: PColors.mint),
       ])),
+      const SizedBox(height: 14),
+      Panel(child: ListTile(
+        leading: const Icon(Icons.psychology_alt_rounded, color: PColors.teal),
+        title: const Text('مراجعتي الذكية',
+          style: TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(s.dueCount(lessons.map((lesson) => lesson.id)) > 0
+          ? 'لديك مراجعات تستحق اهتمامك اليوم'
+          : 'راجع وفق جدول مبني على نتائجك'),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+          builder: (_) => ReviewScreen(lessons: lessons, student: s))),
+      )),
       const SizedBox(height: 24),
       Text('استكشف اليوم', style: Theme.of(context).textTheme.titleLarge
         ?.copyWith(fontWeight: FontWeight.w900)),
@@ -620,6 +632,59 @@ class _MatchPageState extends State<MatchPage> {
           FilledButton(onPressed: () => Navigator.pop(context),
             child: const Text('أنهيت اللعبة')),
         ],
+      ])),
+    );
+  }
+}
+
+
+class ReviewScreen extends StatelessWidget {
+  const ReviewScreen({super.key, required this.lessons, required this.student});
+  final List<Lesson> lessons;
+  final StudentState student;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheduled = lessons.where((l) => student.reviewFor(l.id) != null)
+        .toList()..sort((a, b) =>
+            student.reviewFor(a.id)!.dueDate.compareTo(
+              student.reviewFor(b.id)!.dueDate));
+    final today = scheduled.where((l) => student.reviewDue(l.id)).toList();
+    final future = scheduled.where((l) => !student.reviewDue(l.id)).toList();
+
+    Widget item(Lesson lesson) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Card(child: ListTile(
+        title: Text(lesson.title,
+          style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text('المراجعة القادمة: ' +
+            student.reviewFor(lesson.id)!.dueDate),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: () => openLesson(context, lesson, student),
+      )),
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('مراجعتي الذكية')),
+      body: safe(ListView(padding: const EdgeInsets.all(20), children: [
+        const Text('راجع في الوقت المناسب', style: TextStyle(
+          fontWeight: FontWeight.w900, fontSize: 24)),
+        const SizedBox(height: 6),
+        const Text('تُحدد المواعيد حسب نتائج التدريب وتُحفظ دون إنترنت.'),
+        const SizedBox(height: 20),
+        const Text('مستحق اليوم', style: TextStyle(
+          fontSize: 19, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        if (today.isEmpty)
+          const Panel(child: Text('ممتاز! ليس لديك مراجعات مستحقة حالياً.')),
+        ...today.map(item),
+        const SizedBox(height: 20),
+        const Text('مراجعات قادمة', style: TextStyle(
+          fontSize: 19, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        if (future.isEmpty)
+          const Panel(child: Text('ستظهر المراجعات بعد إنهاء اختبارات الدروس.')),
+        ...future.map(item),
       ])),
     );
   }

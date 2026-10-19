@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models.dart';
+import '../data/review_schedule.dart';
 
 class StudentState extends ChangeNotifier {
   StudentState(this.prefs)
@@ -11,7 +13,19 @@ class StudentState extends ChangeNotifier {
         scale = prefs.getDouble('scale') ?? 1,
         completed = (prefs.getStringList('completed') ?? []).toSet(),
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
-        xp = prefs.getInt('xp') ?? 0;
+        xp = prefs.getInt('xp') ?? 0 {
+    try {
+      final data = jsonDecode(prefs.getString('reviews_v1') ?? '{}');
+      if (data is Map) {
+        for (final entry in data.entries) {
+          try {
+            reviews[entry.key as String] = ReviewSchedule.fromJson(
+                Map<String, dynamic>.from(entry.value as Map));
+          } catch (_) { /* Ignore only corrupted entries. */ }
+        }
+      }
+    } catch (_) { /* Invalid local data must not block app startup. */ }
+  }
 
   final SharedPreferences prefs;
   String name;
@@ -22,10 +36,16 @@ class StudentState extends ChangeNotifier {
   Set<String> completed;
   Set<String> favourites;
   int xp;
+  final Map<String, ReviewSchedule> reviews = {};
 
   bool get configured => prefs.getBool('configured') ?? false;
   bool done(String id) => completed.contains(id);
   bool saved(String id) => favourites.contains(id);
+  ReviewSchedule? reviewFor(String id) => reviews[id];
+  bool reviewDue(String id, {DateTime? now}) =>
+      reviews[id]?.isDue(now ?? DateTime.now()) ?? false;
+  int dueCount(Iterable<String> ids, {DateTime? now}) =>
+      ids.where((id) => reviewDue(id, now: now)).length;
 
   Future<void> configure(String nickname, int level, String branch) async {
     if (level < 1 || level > 12 || !LessonCatalog.tracksFor(level).contains(branch)) {
@@ -49,6 +69,10 @@ class StudentState extends ChangeNotifier {
       await prefs.setStringList('completed', completed.toList()..sort());
       await prefs.setInt('xp', xp);
     }
+    reviews[id] = ReviewSchedule.next(
+      (score * 100 / total).round(), DateTime.now(), previous: reviews[id]);
+    await prefs.setString('reviews_v1', jsonEncode(
+      reviews.map((id, review) => MapEntry(id, review.toJson()))));
     notifyListeners();
   }
 
@@ -72,11 +96,11 @@ class StudentState extends ChangeNotifier {
 
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
-      'completed','favourites','xp','configured']) {
+      'completed','favourites','xp','configured','reviews_v1']) {
       await prefs.remove(key);
     }
     name=''; grade=1; track='عام'; darkMode=false; scale=1;
-    completed=<String>{}; favourites=<String>{}; xp=0;
+    completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear();
     notifyListeners();
   }
 }
