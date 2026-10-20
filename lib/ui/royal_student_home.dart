@@ -235,7 +235,6 @@ class _SubjectSummary extends StatelessWidget {
           ClipRRect(borderRadius:BorderRadius.circular(12),
             child:LinearProgressIndicator(value:progress,minHeight:7,
               color:color,backgroundColor:color.withValues(alpha:.10))),
-        ]))),
-    ));
+        ]))));
   }
 }
