@@ -48,7 +48,7 @@ def main():
             (folder/"launch_background.xml").write_text(
                 '<?xml version="1.0" encoding="utf-8"?>\n'
                 '<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n'
-                '  <item android:drawable="#053628"/>\n'
+                '  <item><shape android:shape="rectangle"><solid android:color="#053628"/></shape></item>\n'
                 '  <item><bitmap android:gravity="center" '
                 'android:src="@drawable/paledu_splash"/></item>\n'
                 '</layer-list>\n', encoding="utf-8")

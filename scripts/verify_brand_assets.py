@@ -18,3 +18,7 @@ for filename,size in [("Icon-192.png",192),("Icon-512.png",512)]:
     assert im.size==(size,size)
 assert (root/"android/app/src/main/res/drawable/launch_background.xml").exists()
 print("PalEdu launcher icons, native splash, PWA artwork: verified")
+
+xml=(root/"android/app/src/main/res/drawable/launch_background.xml").read_text(encoding="utf-8")
+assert 'android:drawable="#' not in xml, "Invalid literal color in drawable reference"
+assert 'android:color="#053628"' in xml
