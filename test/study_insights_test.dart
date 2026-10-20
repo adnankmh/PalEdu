@@ -96,6 +96,8 @@ void main(){
           onPractice:(){},onSubjects:(){}),
       )));
     expect(find.text('إنجازاتي التعليمية'),findsOneWidget);
+    await tester.scrollUntilVisible(find.text('هدفي اليومي'),240,
+      scrollable:find.byType(Scrollable).first);
     expect(find.text('هدفي اليومي'),findsOneWidget);
     expect(tester.takeException(),isNull);
   });
