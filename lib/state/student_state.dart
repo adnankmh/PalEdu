@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models.dart';
+import '../data/reading_shelf.dart';
 import '../data/review_schedule.dart';
 
 class StudentState extends ChangeNotifier {
@@ -119,6 +120,13 @@ class StudentState extends ChangeNotifier {
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
       'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1']) {
+      await prefs.remove(key);
+    }
+    await ReadingShelf(prefs).clear();
+    // Legacy per-book metadata is deleted alongside the new reading shelf.
+    for(final key in prefs.getKeys().where((v)=>
+      v.startsWith('paledu_pdf_page_')||
+      v.startsWith('paledu_pdf_bookmark_')).toList()){
       await prefs.remove(key);
     }
     name=''; grade=1; track='عام'; darkMode=false; scale=1;

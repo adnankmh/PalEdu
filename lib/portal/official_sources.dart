@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../data/reading_shelf.dart';
 import '../data/ministry_catalog.dart';
 import '../data/models.dart';
 import '../ui/design.dart';
@@ -19,7 +21,22 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
   late Future<List<MinistryDocument>> catalog;
   late int grade;
   late String branch;
-  String query='',kind='الكل';
+  String query='',kind='الكل',shelfFilter='all';
+  Map<String,ReadingEntry> reading=<String,ReadingEntry>{};
+
+  Future<void> loadReading() async {
+    final prefs=await SharedPreferences.getInstance();
+    final entries=ReadingShelf(prefs).all();
+    if(mounted)setState(() {
+      reading={for(final e in entries)e.id:e};
+    });
+  }
+  Future<void> openBook(MinistryDocument doc) async {
+    await Navigator.push(context,MaterialPageRoute<void>(
+      builder:(_)=>InternalPdfReader(
+        title:doc.title,url:doc.url,documentId:doc.id,ministryDocument:doc)));
+    if(mounted)await loadReading();
+  }
   @override
   void initState(){
     super.initState();
@@ -27,6 +44,7 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
     branch=LessonCatalog.tracksFor(grade).contains(widget.initialBranch)
       ?widget.initialBranch:LessonCatalog.tracksFor(grade).first;
     catalog=repo.getAll();
+    loadReading();
   }
   @override
   void dispose(){repo.dispose();super.dispose();}
@@ -98,6 +116,23 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
                   onSelected:(_)=>setState(()=>kind=k))),
             ],
           ])),
+        const SizedBox(height:12),
+        SingleChildScrollView(scrollDirection:Axis.horizontal,
+          child:Row(children:[
+            for(final pair in const [
+              ('all','جميع الكتب'),('favourites','مفضلتي'),
+              ('recent','متابعة القراءة')
+            ]) ...[
+              Padding(padding:const EdgeInsets.only(left:8),
+                child:ChoiceChip(
+                  avatar:Icon(pair.$1=='favourites'
+                    ?Icons.bookmark_border_rounded:
+                    pair.$1=='recent'?Icons.history_rounded:
+                    Icons.library_books_outlined,size:17),
+                  label:Text(pair.$2),selected:shelfFilter==pair.$1,
+                  onSelected:(_)=>setState(()=>shelfFilter=pair.$1))),
+            ],
+          ])),
         const SizedBox(height:16),
         FutureBuilder<List<MinistryDocument>>(future:catalog,
           builder:(context,snapshot){
@@ -112,9 +147,16 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
             final current=snapshot.data!.where((doc)=>
               doc.matches(grade,branch)&&
               (kind=='الكل'||doc.kind==kind)&&
+              (shelfFilter=='all'||
+                (shelfFilter=='favourites'&&
+                  (reading[doc.id]?.favourite??false))||
+                (shelfFilter=='recent'&&reading.containsKey(doc.id)))&&
               (doc.title.contains(query)||doc.kind.contains(query)))
               .toList();
-            current.sort((a,b)=>a.title.compareTo(b.title));
+            current.sort((a,b)=>shelfFilter=='recent'
+              ?(reading[b.id]?.openedAt??0)
+                  .compareTo(reading[a.id]?.openedAt??0)
+              :a.title.compareTo(b.title));
             if(current.isEmpty) return Column(children:[
               const RoyalSectionHeading(title:'المكتبة'),
               const SizedBox(height:12),
@@ -141,13 +183,14 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
                       color:PColors.royal,size:27)),
                   title:Text(doc.title,style:const TextStyle(
                     fontWeight:FontWeight.w900)),
-                  subtitle:Text(doc.kind+' • وزارة التربية والتعليم الفلسطينية',
+                  subtitle:Text(doc.kind+
+                    (reading[doc.id]==null?' • وزارة التربية والتعليم الفلسطينية':
+                      ' • آخر صفحة '+reading[doc.id]!.lastPage.toString()),
                     style:const TextStyle(fontSize:11.5)),
-                  trailing:const Icon(Icons.menu_book_rounded,
+                  trailing:Icon((reading[doc.id]?.favourite??false)
+                    ?Icons.bookmark_rounded:Icons.menu_book_rounded,
                     color:PColors.teal),
-                  onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-                    builder:(_)=>InternalPdfReader(title:doc.title,
-                      url:doc.url,documentId:doc.id))),
+                  onTap:()=>openBook(doc),
                 )))),
             ]);
           }),
