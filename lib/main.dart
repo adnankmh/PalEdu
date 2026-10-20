@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/models.dart';
 import 'state/student_state.dart';
 import 'ui/design.dart';
+import 'ui/royal_student_home.dart';
+import 'ui/royal_subject_library.dart';
 import 'portal/portal_service.dart';
 import 'portal/portal_gateway.dart';
 import 'portal/official_sources.dart';
@@ -156,8 +158,20 @@ class _HomeShellState extends State<HomeShell> {
     final lessons=widget.catalog.forStudent(s.grade, s.track);
     return Scaffold(
       body: SafeArea(child: safe(IndexedStack(index: tab, children: [
-        dashboard(lessons, s),
-        library(lessons, s),
+        RoyalStudentHome(
+          student:s,lessons:lessons,
+          onSubjects:()=>setState(()=>tab=1),
+          onGames:()=>setState(()=>tab=2),
+          onReview:()=>Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>ReviewScreen(lessons:lessons,student:s))),
+          onOfficialSources:()=>Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>const OfficialSourcesScreen())),
+          onLesson:(l)=>openLesson(context,l,s)),
+        RoyalSubjectLibrary(
+          student:s,lessons:lessons,
+          onOfficialSources:()=>Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>const OfficialSourcesScreen())),
+          onLesson:(l)=>openLesson(context,l,s)),
         games(lessons),
         profile(s),
       ]))),
@@ -174,152 +188,6 @@ class _HomeShellState extends State<HomeShell> {
             selectedIcon: Icon(Icons.person_rounded), label: 'حسابي'),
         ]),
     );
-  }
-
-  Widget dashboard(List<Lesson> lessons, StudentState s) {
-    final done=lessons.where((l) => s.done(l.id)).length;
-    final progress=lessons.isEmpty ? 0.0 : done/lessons.length;
-    return ListView(padding: const EdgeInsets.all(19), children: [
-      Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('أهلاً، ' + s.name + ' 👋',
-              style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
-            Text(LessonCatalog.gradeName(s.grade) + ' • ' + s.track),
-          ])),
-        const CircleAvatar(radius: 25, backgroundColor: PColors.mint,
-          child: Icon(Icons.school_rounded, color: PColors.midnight)),
-      ]),
-      const SizedBox(height: 22),
-      Container(
-        padding: const EdgeInsets.all(25),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(27),
-          gradient: const LinearGradient(
-            colors: [PColors.royal, PColors.midnight, Color(0xFF007B81)],
-            begin: Alignment.topRight, end: Alignment.bottomLeft)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('✦ رحلة التعلّم', style: TextStyle(
-            color: PColors.gold, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 15),
-          const Text('كل يوم، إنجاز جديد',
-            style: TextStyle(color: Colors.white, fontSize: 27,
-              fontWeight: FontWeight.w900)),
-          const SizedBox(height: 8),
-          const Text('تعلّم بذكاء، العب واكتشف، وتقدّم دون إنترنت.',
-            style: TextStyle(color: Color(0xFFE8F3FF), fontSize: 15)),
-          const SizedBox(height: 20),
-          FilledButton.icon(onPressed: () => setState(() => tab=1),
-            style: FilledButton.styleFrom(
-              foregroundColor: PColors.midnight, backgroundColor: Colors.white),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('استكشف دروسي')),
-        ]),
-      ),
-      const SizedBox(height: 15),
-      Row(children: [
-        Expanded(child: Panel(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Icons.stars_rounded, color: PColors.gold, size: 29),
-            Text(s.xp.toString(), style: const TextStyle(
-              fontSize: 25, fontWeight: FontWeight.w900)),
-            const Text('نقاطي'),
-          ]))),
-        const SizedBox(width: 10),
-        Expanded(child: Panel(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Icons.verified_rounded, color: PColors.teal, size: 29),
-            Text(done.toString(), style: const TextStyle(
-              fontSize: 25, fontWeight: FontWeight.w900)),
-            const Text('دروس مكتملة'),
-          ]))),
-      ]),
-      const SizedBox(height: 23),
-      Text('تقدّمي', style: Theme.of(context).textTheme.titleLarge
-        ?.copyWith(fontWeight: FontWeight.w900)),
-      const SizedBox(height: 9),
-      Panel(child: Column(children: [
-        Row(children: [
-          Expanded(child: Text('أنجزت $done من ' + lessons.length.toString())),
-          Text((progress*100).round().toString() + '%'),
-        ]),
-        const SizedBox(height: 11),
-        LinearProgressIndicator(value: progress, minHeight: 11,
-          color: PColors.teal, backgroundColor: PColors.mint),
-      ])),
-      const SizedBox(height: 14),
-      Panel(child: ListTile(
-        leading: const Icon(Icons.psychology_alt_rounded, color: PColors.teal),
-        title: const Text('مراجعتي الذكية',
-          style: TextStyle(fontWeight: FontWeight.w900)),
-        subtitle: Text(s.dueCount(lessons.map((lesson) => lesson.id)) > 0
-          ? 'لديك مراجعات تستحق اهتمامك اليوم'
-          : 'راجع وفق جدول مبني على نتائجك'),
-        trailing: const Icon(Icons.chevron_left_rounded),
-        onTap: () => Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => ReviewScreen(lessons: lessons, student: s))),
-      )),
-      const SizedBox(height: 24),
-      Text('استكشف اليوم', style: Theme.of(context).textTheme.titleLarge
-        ?.copyWith(fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10),
-      ...lessons.take(3).map((l) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: lessonCard(l, s))),
-      const Text('نماذج تعليمية تجريبية وليست كتب الوزارة الرسمية',
-        textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
-    ]);
-  }
-
-  Widget lessonCard(Lesson l, StudentState s) => Card(
-    child: InkWell(borderRadius: BorderRadius.circular(23),
-      onTap: () => openLesson(context, l, s),
-      child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-        Container(height: 52, width: 52,
-          decoration: BoxDecoration(color: PColors.mint,
-            borderRadius: BorderRadius.circular(15)),
-          child: Icon(l.subject.contains('رياضيات') ?
-            Icons.calculate_rounded : Icons.menu_book_rounded,
-            color: PColors.midnight)),
-        const SizedBox(width: 13),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l.title, style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w900)),
-            Text(l.subject + ' • ' + l.duration.toString() + ' دقائق'),
-          ])),
-        Icon(s.done(l.id) ? Icons.check_circle_rounded :
-          Icons.chevron_left_rounded, color: s.done(l.id) ? PColors.teal : null),
-      ]))),
-  );
-
-  Widget library(List<Lesson> lessons, StudentState s) {
-    final groups=<String,List<Lesson>>{};
-    for (final l in lessons) {
-      groups.putIfAbsent(l.subject, () => []).add(l);
-    }
-    return ListView(padding: const EdgeInsets.all(19), children: [
-      Text('مكتبتي الدراسية', style: Theme.of(context).textTheme.headlineSmall
-        ?.copyWith(fontWeight: FontWeight.w900)),
-      const Text('دروس منظّمة حسب المادة والصف الدراسي'),
-      const SizedBox(height: 17),
-      Panel(child:ListTile(
-        leading:const Icon(Icons.verified_rounded,color:PColors.teal),
-        title:const Text('الرزم والكتب الفلسطينية الرسمية'),
-        subtitle:const Text('فتح فهرس وزارة التربية والتعليم'),
-        trailing:const Icon(Icons.open_in_new),
-        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-          builder:(_)=>const OfficialSourcesScreen())))),
-      const SizedBox(height: 17),
-      for (final entry in groups.entries) ...[
-        Text(entry.key, style: const TextStyle(
-          fontSize: 19, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 10),
-        ...entry.value.map((l) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: lessonCard(l, s))),
-        const SizedBox(height: 14),
-      ],
-    ]);
   }
 
   Widget games(List<Lesson> lessons) => ListView(
