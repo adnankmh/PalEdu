@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/models.dart';
 import '../state/student_state.dart';
 import 'design.dart';
+import 'royal_motion.dart';
 
 /// Dashboard inspired by approved PalEdu emerald/gold references.
 /// All numbers are computed from actual locally persisted learner progress.
@@ -56,6 +57,7 @@ class RoyalStudentHome extends StatelessWidget {
         ]),
         const SizedBox(height:22),
         _ContinueCard(lesson:next,progress:progress,
+          motion:student.animationsEnabled,
           finished:count,total:lessons.length,onPressed: next==null
             ? onSubjects : ()=>onLesson(next)),
         const SizedBox(height:22),
@@ -128,9 +130,11 @@ class RoyalStudentHome extends StatelessWidget {
 
 class _ContinueCard extends StatelessWidget {
   const _ContinueCard({required this.lesson,required this.progress,
+    required this.motion,
     required this.finished,required this.total,required this.onPressed});
   final Lesson? lesson;
   final double progress;
+  final bool motion;
   final int finished,total;
   final VoidCallback onPressed;
   @override
@@ -152,7 +156,10 @@ class _ContinueCard extends StatelessWidget {
           child:const Text('أكمل من حيث توقفت',
             style:TextStyle(color:PColors.gold,fontWeight:FontWeight.w900))),
         const Spacer(),
-        const Icon(Icons.auto_stories_rounded,color:PColors.gold),
+        RoyalMotionGraphic(
+          asset:'assets/animations/welcome_book.json',
+          fallback:Icons.auto_stories_rounded,
+          enabled:motion,label:'كتاب المعرفة',size:58),
       ]),
       const SizedBox(height:18),
       Text(lesson?.subject??'ابدأ رحلتك التعليمية',

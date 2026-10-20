@@ -11,6 +11,7 @@ class StudentState extends ChangeNotifier {
         grade = prefs.getInt('grade') ?? 1,
         track = prefs.getString('track') ?? 'عام',
         darkMode = prefs.getBool('darkMode') ?? false,
+        animationsEnabled = prefs.getBool('animationsEnabled') ?? true,
         scale = prefs.getDouble('scale') ?? 1,
         completed = (prefs.getStringList('completed') ?? []).toSet(),
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
@@ -43,6 +44,7 @@ class StudentState extends ChangeNotifier {
   int grade;
   String track;
   bool darkMode;
+  bool animationsEnabled;
   double scale;
   Set<String> completed;
   Set<String> favourites;
@@ -105,10 +107,14 @@ class StudentState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> appearance({bool? dark, double? textScale}) async {
+  Future<void> appearance({bool? dark, bool? motion, double? textScale}) async {
     if (dark != null) {
       darkMode = dark;
       await prefs.setBool('darkMode', dark);
+    }
+    if (motion != null) {
+      animationsEnabled = motion;
+      await prefs.setBool('animationsEnabled', motion);
     }
     if (textScale != null) {
       scale = textScale.clamp(.9, 1.3);
@@ -119,7 +125,8 @@ class StudentState extends ChangeNotifier {
 
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
-      'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1']) {
+      'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1',
+      'animationsEnabled']) {
       await prefs.remove(key);
     }
     await ReadingShelf(prefs).clear();
@@ -129,7 +136,7 @@ class StudentState extends ChangeNotifier {
       v.startsWith('paledu_pdf_bookmark_')).toList()){
       await prefs.remove(key);
     }
-    name=''; grade=1; track='عام'; darkMode=false; scale=1;
+    name=''; grade=1; track='عام'; darkMode=false; animationsEnabled=true; scale=1;
     completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear();
     notifyListeners();
   }
