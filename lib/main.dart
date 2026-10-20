@@ -7,6 +7,7 @@ import 'state/student_state.dart';
 import 'ui/design.dart';
 import 'ui/royal_student_home.dart';
 import 'ui/royal_subject_library.dart';
+import 'ui/royal_lesson_reader.dart';
 import 'portal/portal_service.dart';
 import 'portal/portal_gateway.dart';
 import 'portal/official_sources.dart';
@@ -276,62 +277,18 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class LessonScreen extends StatelessWidget {
-  const LessonScreen({super.key, required this.lesson, required this.student});
+  const LessonScreen({super.key,required this.lesson,required this.student});
   final Lesson lesson;
   final StudentState student;
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(lesson.subject), actions: [
-      IconButton(onPressed: () => student.toggleSaved(lesson.id),
-        tooltip: 'حفظ الدرس', icon: Icon(student.saved(lesson.id)
-          ? Icons.bookmark_rounded : Icons.bookmark_border_rounded)),
-    ]),
-    body: safe(ListView(padding: const EdgeInsets.all(20), children: [
-      Container(padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: PColors.midnight, borderRadius: BorderRadius.circular(27)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('✦ درس تفاعلي', style: TextStyle(color: PColors.gold)),
-          const SizedBox(height: 10),
-          Text(lesson.title, style: const TextStyle(color: Colors.white,
-            fontWeight: FontWeight.w900, fontSize: 26)),
-          const SizedBox(height: 9),
-          Text(lesson.summary,
-            style: const TextStyle(color: Color(0xFFE7F4FF))),
-        ])),
-      const SizedBox(height: 20),
-      for (int i=0;i<lesson.sections.length;i++) ...[
-        Panel(child: Row(crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(backgroundColor: PColors.mint, radius: 17,
-              child: Text((i+1).toString(),
-                style: const TextStyle(color: PColors.midnight))),
-            const SizedBox(width: 12),
-            Expanded(child: Text(lesson.sections[i],
-              style: const TextStyle(fontSize: 17, height: 1.6))),
-          ])),
-        const SizedBox(height: 10),
-      ],
-      const SizedBox(height: 15),
-      FilledButton.icon(onPressed: () => Navigator.push(context,
-        MaterialPageRoute<void>(builder: (_) =>
-          QuizPage(lesson: lesson, student: student))),
-        icon: const Icon(Icons.quiz_rounded),
-        label: const Text('اختبر فهمك')),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(onPressed: () => Navigator.push(context,
-        MaterialPageRoute<void>(builder: (_) =>
-          FlashPage(lesson: lesson))),
-        icon: const Icon(Icons.style_rounded),
-        label: const Text('بطاقات الذاكرة')),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(onPressed: () => Navigator.push(context,
-        MaterialPageRoute<void>(builder: (_) =>
-          MatchPage(lesson: lesson))),
-        icon: const Icon(Icons.extension_rounded),
-        label: const Text('لعبة المطابقة')),
-    ])),
-  );
+  Widget build(BuildContext context)=>RoyalLessonReader(
+    lesson:lesson,student:student,
+    onQuiz:()=>Navigator.push(context,MaterialPageRoute<void>(
+      builder:(_)=>QuizPage(lesson:lesson,student:student))),
+    onFlashcards:()=>Navigator.push(context,MaterialPageRoute<void>(
+      builder:(_)=>FlashPage(lesson:lesson))),
+    onMatch:()=>Navigator.push(context,MaterialPageRoute<void>(
+      builder:(_)=>MatchPage(lesson:lesson))));
 }
 
 class QuizPage extends StatefulWidget {

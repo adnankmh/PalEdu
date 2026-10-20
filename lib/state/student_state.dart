@@ -25,6 +25,16 @@ class StudentState extends ChangeNotifier {
         }
       }
     } catch (_) { /* Invalid local data must not block app startup. */ }
+    try {
+      final raw=jsonDecode(prefs.getString('lesson_notes_v1')??'{}');
+      if(raw is Map) {
+        for(final entry in raw.entries){
+          if(entry.key is String && entry.value is String) {
+            notes[entry.key as String]=(entry.value as String);
+          }
+        }
+      }
+    } catch (_) { /* Do not let malformed local notes crash startup. */ }
   }
 
   final SharedPreferences prefs;
@@ -37,10 +47,22 @@ class StudentState extends ChangeNotifier {
   Set<String> favourites;
   int xp;
   final Map<String, ReviewSchedule> reviews = {};
+  final Map<String,String> notes = {};
 
   bool get configured => prefs.getBool('configured') ?? false;
   bool done(String id) => completed.contains(id);
   bool saved(String id) => favourites.contains(id);
+  String noteFor(String lessonId) => notes[lessonId]??'';
+  Future<void> saveLessonNote(String lessonId,String note) async {
+    if(lessonId.trim().isEmpty || note.length>2000) {
+      throw ArgumentError('Invalid note');
+    }
+    final value=note.trim();
+    if(value.isEmpty) { notes.remove(lessonId); }
+    else { notes[lessonId]=value; }
+    await prefs.setString('lesson_notes_v1',jsonEncode(notes));
+    notifyListeners();
+  }
   ReviewSchedule? reviewFor(String id) => reviews[id];
   bool reviewDue(String id, {DateTime? now}) =>
       reviews[id]?.isDue(now ?? DateTime.now()) ?? false;
@@ -96,11 +118,11 @@ class StudentState extends ChangeNotifier {
 
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
-      'completed','favourites','xp','configured','reviews_v1']) {
+      'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1']) {
       await prefs.remove(key);
     }
     name=''; grade=1; track='عام'; darkMode=false; scale=1;
-    completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear();
+    completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear();
     notifyListeners();
   }
 }
