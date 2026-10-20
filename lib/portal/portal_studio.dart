@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../ui/internal_pdf_reader.dart';
+import '../ui/internal_video_player.dart';
 import '../data/models.dart';
 import '../ui/design.dart';
 import '../ui/royal_portal_components.dart';
@@ -346,8 +347,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
 }
 
 class PublishedLibrary extends StatefulWidget {
-  const PublishedLibrary({super.key,required this.grade});
+  const PublishedLibrary({super.key,required this.grade,this.branch='عام'});
   final int grade;
+  final String branch;
   @override
   State<PublishedLibrary> createState()=>_PublishedLibraryState();
 }
@@ -361,14 +363,17 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
   Future<void> open(Map<String,dynamic> item) async {
     try {
       final link=await PortalService.instance.accessUrl(item);
-      final uri=Uri.tryParse(link);
-      if(uri==null || uri.scheme!='https' ||
-        !await launchUrl(uri,mode:LaunchMode.externalApplication)) {
-        throw StateError('Cannot open');
-      }
+      if(!mounted)return;
+      final name=item['title']?.toString()??'مادة تعليمية';
+      final id=item['resource_id']?.toString()??link;
+      final kind=item['kind']?.toString()??'';
+      await Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>
+        kind=='video'
+          ?InternalVideoPlayer(title:name,url:link)
+          :InternalPdfReader(title:name,url:link,documentId:id)));
     } catch (_) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content:Text('لا يمكن فتح المادة حالياً؛ حاول لاحقاً')));
+        const SnackBar(content:Text('لا يمكن فتح المادة حالياً؛ تحقق من الاتصال والصلاحيات')));
     }
   }
   @override
@@ -395,6 +400,8 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
         if(!snapshot.hasData) return const Center(child:CircularProgressIndicator());
         final list=snapshot.data!.where((item)=>
           (kind=='all'||item['kind']==kind) &&
+          (widget.grade<=10||widget.branch=='عام'||
+            item['branch']==widget.branch||item['branch']=='عام') &&
           ((item['title']?.toString()??'').contains(query) ||
           (item['subject']?.toString()??'').contains(query))).toList();
         if(list.isEmpty) return const Panel(

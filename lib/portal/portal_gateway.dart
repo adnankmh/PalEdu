@@ -301,7 +301,7 @@ class StudentCloudHub extends StatelessWidget {
           subtitle:const Text('مواد راجعها واعتمدها مدير المنصة'),
           trailing:const Icon(Icons.chevron_left),
           onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
-            builder:(_)=>PublishedLibrary(grade:student.grade))))),
+            builder:(_)=>PublishedLibrary(grade:student.grade,branch:student.track))))),
         const SizedBox(height:10),
         Panel(child:ListTile(
           leading:const Icon(Icons.verified_rounded,color:PColors.teal),
