@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../data/models.dart';
 import '../ui/design.dart';
+import '../ui/royal_portal_components.dart';
 import 'portal_service.dart';
 
 Widget _page(Widget child)=>Center(child:ConstrainedBox(
@@ -34,21 +35,16 @@ class _TeacherStudioState extends State<TeacherStudio> {
         if (mounted) setState(refresh);
       }),
     body:_page(ListView(padding:const EdgeInsets.fromLTRB(20,18,20,95),children:[
-      Container(padding:const EdgeInsets.all(24),
-        decoration:BoxDecoration(
-          gradient:const LinearGradient(
-            colors:[PColors.royal,PColors.midnight,Color(0xFF087D88)]),
-          borderRadius:BorderRadius.circular(28)),
-        child:const Column(crossAxisAlignment:CrossAxisAlignment.start,
-          children:[
-            Icon(Icons.co_present_rounded,color:PColors.gold,size:43),
-            SizedBox(height:12),
-            Text('اصنع تعلّماً يترك أثراً',style:TextStyle(
-              color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),
-            SizedBox(height:8),
-            Text('كتب، ملازم، فيديوهات ودروس بانتظار اعتماد الإدارة',
-              style:TextStyle(color:Colors.white,fontSize:15)),
-          ])),
+      RoyalPortalBanner(
+        icon:Icons.co_present_rounded,
+        title:widget.role=='trainer'?'استوديو المدرب':'استوديو المعلم',
+        subtitle:'أنشئ المحتوى وتابع حالة مراجعته قبل نشره للطلاب.',
+        actionLabel:'إنشاء محتوى جديد',
+        onAction:() async {
+          await Navigator.push(context,MaterialPageRoute<void>(
+            builder:(_)=>const ResourceComposer()));
+          if(mounted)setState(refresh);
+        }),
       const SizedBox(height:21),
       Row(children:[
         Expanded(child:Text('المحتوى الذي أضفته',
@@ -65,30 +61,43 @@ class _TeacherStudioState extends State<TeacherStudio> {
           if (!snapshot.hasData) return const Center(
             child:CircularProgressIndicator());
           final list=snapshot.data!;
-          if (list.isEmpty) return const Panel(
-            child:Text('لا توجد مواد بعد. اختر إضافة محتوى لبدء العمل.'));
-          return Column(children:[
+          if (list.isEmpty) return const RoyalEmptyState(
+            title:'لا توجد مواد بعد',
+            message:'اضغط إضافة محتوى لبدء إنشاء أول درس أو كتاب أو فيديو.');
+          return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            const RoyalSectionHeading(
+              title:'إحصاءات المحتوى',subtitle:'ضمن آخر 100 مادة تم تحميلها'),
+            const SizedBox(height:12),
+            RoyalMetricsGrid(metrics:[
+              RoyalMetricTile(label:'إجمالي المواد',
+                value:list.length.toString(),icon:Icons.auto_stories_rounded),
+              RoyalMetricTile(label:'منشورة',
+                value:list.where((x)=>x['status']=='published').length.toString(),
+                icon:Icons.verified_rounded,color:PColors.royal),
+              RoyalMetricTile(label:'بانتظار المراجعة',
+                value:list.where((x)=>x['status']=='pending').length.toString(),
+                icon:Icons.schedule_rounded,color:PColors.orange),
+              RoyalMetricTile(label:'مسودات ومرفوضة',
+                value:list.where((x)=>x['status']=='draft'||x['status']=='rejected').length.toString(),
+                icon:Icons.edit_note_rounded,color:PColors.blue),
+            ]),
+            const SizedBox(height:17),
+            const RoyalSectionHeading(title:'المحتويات التي أضفتها'),
+            const SizedBox(height:12),
             for(final item in list) Padding(
               padding:const EdgeInsets.only(bottom:10),
-              child:Panel(child:ListTile(
-                leading:const Icon(Icons.article_outlined,color:PColors.teal),
-                title:Text(item['title']?.toString()??''),
-                subtitle:Text((item['subject']?.toString()??'')+' • '+
-                  (item['grade']?.toString()??'')),
-                trailing:Chip(label:Text(_status(item['status']?.toString())))))),
+              child:RoyalAuthorResourceCard(
+                title:item['title']?.toString()??'بدون عنوان',
+                subject:item['subject']?.toString()??'',
+                grade:item['grade']?.toString()??'-',
+                kind:item['kind']?.toString()??'',
+                status:item['status']?.toString()??'')),
           ]);
         }),
       const SizedBox(height:15),
       const Panel(child:Text('أي مادة يرفعها المعلم لا تظهر للطلاب حتى يعتمدها المدير ويُراجع حقوق استخدامها.')),
     ])),
   );
-  String _status(String? s)=>switch(s){
-    'draft'=>'مسودة',
-    'pending'=>'بانتظار المراجعة',
-    'published'=>'منشور',
-    'rejected'=>'مرفوض',
-    _=>'غير معروف',
-  };
 }
 
 class ResourceComposer extends StatefulWidget {
@@ -230,17 +239,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
   ]);
   @override
   void initState(){super.initState();refresh();}
+  final Set<String> busy=<String>{};
   Future<void> decide(String id,bool yes,bool educator) async {
+    if(busy.contains(id))return;
+    final approved=await showDialog<bool>(context:context,
+      builder:(ctx)=>AlertDialog(
+        title:Text(yes?'تأكيد الاعتماد':'تأكيد الرفض'),
+        content:Text(yes
+          ? 'هل راجعت بيانات الطلب ومصدر المحتوى وحقوق الاستخدام؟'
+          : 'هل تريد رفض هذا الطلب؟'),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),
+            child:const Text('إلغاء')),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+            child:Text(yes?'تأكيد الاعتماد':'تأكيد الرفض')),
+        ]));
+    if(approved!=true||!mounted)return;
+    setState(()=>busy.add(id));
     try {
       if(educator) {
         await PortalService.instance.reviewEducator(id,yes);
       } else {
         await PortalService.instance.reviewResource(id,yes);
       }
-      if(mounted)setState(refresh);
+      if(mounted) {
+        setState(refresh);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:Text(yes?'تم اعتماد الطلب':'تم رفض الطلب')));
+      }
     } catch (_) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content:Text('لم تُنفذ العملية؛ تحقق من الإذن أو الحقوق أو حالة الطلب')));
+        const SnackBar(content:Text(
+          'لم تُنفذ العملية؛ تحقق من الإذن أو الحقوق أو حالة الطلب')));
+    } finally {
+      if(mounted)setState(()=>busy.remove(id));
     }
   }
   @override
@@ -252,20 +284,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         icon:const Icon(Icons.logout)),
     ]),
     body:_page(ListView(padding:const EdgeInsets.all(20),children:[
-      Container(padding:const EdgeInsets.all(25),
-        decoration:BoxDecoration(
-          gradient:const LinearGradient(
-            colors:[PColors.midnight,PColors.royal,Color(0xFF087D88)]),
-          borderRadius:BorderRadius.circular(27)),
-        child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Icon(Icons.admin_panel_settings_rounded,color:PColors.gold,size:42),
-          SizedBox(height:12),
-          Text('الإدارة والتحكم المركزي',style:TextStyle(
-            fontSize:25,fontWeight:FontWeight.w900,color:Colors.white)),
-          SizedBox(height:8),
-          Text('طلبات المعلمين • مراجعة المناهج • حقوق النشر',
-            style:TextStyle(color:Colors.white)),
-        ])),
+      const RoyalPortalBanner(
+        icon:Icons.admin_panel_settings_rounded,
+        title:'القيادة والإدارة المركزية',
+        subtitle:'اعتماد المعلمين ومراجعة المناهج والمواد وحقوق نشرها.',
+      ),
       const SizedBox(height:21),
       FutureBuilder<List<List<Map<String,dynamic>>>>(
         future:pending,builder:(context,snapshot){
@@ -275,28 +298,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child:CircularProgressIndicator());
           final roles=snapshot.data![0], resources=snapshot.data![1];
           return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Row(children:[
-              Expanded(child:Panel(child:Column(children:[
-                const Icon(Icons.person_add_alt_1_rounded,color:PColors.teal),
-                const SizedBox(height:8),
-                Text(roles.length.toString(),style:const TextStyle(
-                  fontSize:29,fontWeight:FontWeight.w900)),
-                const Text('طلبات مدرسين'),
-              ]))),
-              const SizedBox(width:11),
-              Expanded(child:Panel(child:Column(children:[
-                const Icon(Icons.library_books_rounded,color:PColors.teal),
-                const SizedBox(height:8),
-                Text(resources.length.toString(),style:const TextStyle(
-                  fontSize:29,fontWeight:FontWeight.w900)),
-                const Text('مواد للمراجعة'),
-              ]))),
+            RoyalMetricsGrid(metrics:[
+              RoyalMetricTile(label:'طلبات اعتماد المدرسين',
+                value:roles.length.toString(),
+                icon:Icons.co_present_rounded,color:PColors.blue),
+              RoyalMetricTile(label:'مواد بانتظار المراجعة',
+                value:resources.length.toString(),
+                icon:Icons.library_books_rounded,color:PColors.orange),
             ]),
             const SizedBox(height:20),
             const Text('طلبات اعتماد المعلمين',style:TextStyle(
               fontSize:20,fontWeight:FontWeight.w900)),
             const SizedBox(height:10),
-            if(roles.isEmpty) const Panel(child:Text('لا توجد طلبات معلقة')),
+            if(roles.isEmpty) const RoyalEmptyState(
+              title:'لا توجد طلبات معلمين',
+              message:'ستظهر طلبات اعتماد المدرسين والمدربين هنا.'),
             for(final item in roles) _reviewCard(
               title:item['requested_role']=='trainer'?'طلب مدرب':'طلب معلم',
               subtitle:item['statement']?.toString()??'',
@@ -306,7 +322,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             const Text('مراجعة المواد التعليمية',style:TextStyle(
               fontSize:20,fontWeight:FontWeight.w900)),
             const SizedBox(height:10),
-            if(resources.isEmpty) const Panel(child:Text('لا توجد مواد بانتظار النشر')),
+            if(resources.isEmpty) const RoyalEmptyState(
+              title:'لا توجد مواد للمراجعة',
+              message:'المواد الجديدة قيد الاعتماد ستظهر هنا.'),
             for(final item in resources) _reviewCard(
               title:item['title']?.toString()??'',
               subtitle:(item['subject']?.toString()??'')+
@@ -322,20 +340,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _reviewCard({required String title,required String subtitle,
     required VoidCallback approve,required VoidCallback reject})=>
     Padding(padding:const EdgeInsets.only(bottom:10),
-      child:Panel(child:Column(
-        crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-          Text(title,style:const TextStyle(
-            fontSize:17,fontWeight:FontWeight.w900)),
-          const SizedBox(height:7),
-          Text(subtitle,maxLines:5),
-          const SizedBox(height:12),
-          Wrap(spacing:10,children:[
-            FilledButton.icon(onPressed:approve,
-              icon:const Icon(Icons.check),label:const Text('اعتماد')),
-            OutlinedButton.icon(onPressed:reject,
-              icon:const Icon(Icons.close),label:const Text('رفض')),
-          ]),
-        ])));
+      child:RoyalApprovalCard(title:title,description:subtitle,
+        onApprove:approve,onReject:reject));
+
 }
 
 class PublishedLibrary extends StatefulWidget {
