@@ -6,6 +6,7 @@ import 'data/models.dart';
 import 'state/student_state.dart';
 import 'ui/design.dart';
 import 'ui/royal_motion.dart';
+import 'ui/paledu_brand.dart';
 import 'ui/royal_student_home.dart';
 import 'ui/royal_subject_library.dart';
 import 'ui/royal_lesson_reader.dart';
@@ -84,8 +85,7 @@ class _SetupScreenState extends State<SetupScreen> {
           height: 80, width: 80,
           decoration: BoxDecoration(color: PColors.midnight,
             borderRadius: BorderRadius.circular(24)),
-          child: const Icon(Icons.auto_stories_rounded,
-            color: PColors.gold, size: 44))),
+          child:const PalEduBrandLogo(size:80,darkTile:true))),
         const SizedBox(height: 24),
         Text('مستقبلك يبدأ هنا', style: Theme.of(context).textTheme.headlineMedium
           ?.copyWith(fontWeight: FontWeight.w900)),
