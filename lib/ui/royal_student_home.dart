@@ -3,6 +3,7 @@ import '../data/models.dart';
 import '../state/student_state.dart';
 import 'design.dart';
 import 'royal_motion.dart';
+import 'paledu_brand.dart';
 
 /// Dashboard inspired by approved PalEdu emerald/gold references.
 /// All numbers are computed from actual locally persisted learner progress.
@@ -32,7 +33,7 @@ class RoyalStudentHome extends StatelessWidget {
       children:[
         Row(children:[
           CircleAvatar(radius:25,backgroundColor:PColors.mint,
-            child:const Icon(Icons.school_rounded,color:PColors.royal,size:27)),
+            child:const PalEduBrandLogo(size:44)),
           const SizedBox(width:12),
           Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,
             children:[

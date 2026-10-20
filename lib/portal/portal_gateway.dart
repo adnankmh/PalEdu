@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../state/student_state.dart';
 import '../ui/design.dart';
 import '../ui/royal_motion.dart';
+import '../ui/paledu_brand.dart';
 import '../main.dart' show HomeShell, SetupScreen;
 import 'portal_service.dart';
 import 'portal_studio.dart';
@@ -90,7 +91,7 @@ class PortalWelcome extends StatelessWidget {
             borderRadius:BorderRadius.circular(30)),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
             Row(children:[
-              const RoyalBrandCrest(size:68),
+              const PalEduBrandLogo(size:68),
               const SizedBox(width:9),
               RoyalMotionGraphic(
                 asset:'assets/animations/welcome_book.json',
