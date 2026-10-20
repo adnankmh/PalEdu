@@ -72,7 +72,7 @@ void main(){
     });
     final prefs=await SharedPreferences.getInstance();
     final student=StudentState(prefs);
-    expect(student.practiceDays.keys,toListEquals(['2026-10-20']));
+    expect(student.practiceDays.keys,orderedEquals(['2026-10-20']));
     await student.erase();
     expect(prefs.containsKey('practice_days_v1'),isFalse);
     expect(StudentState(prefs).practiceDays,isEmpty);
