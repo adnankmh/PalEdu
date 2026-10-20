@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/ministry_catalog.dart';
+import '../data/reading_shelf.dart';
 
 /// View streaming remote PDFs inside PalEdu, including private signed URLs.
 /// The application does not redistribute or bundle ministry-owned books.
 class InternalPdfReader extends StatefulWidget {
   const InternalPdfReader({super.key,required this.title,required this.url,
-    required this.documentId});
+    required this.documentId,this.ministryDocument});
   final String title,url,documentId;
+  final MinistryDocument? ministryDocument;
   @override
   State<InternalPdfReader> createState()=>_InternalPdfReaderState();
 }
@@ -21,19 +24,35 @@ class _InternalPdfReaderState extends State<InternalPdfReader> {
   void initState(){super.initState();restore();}
   Future<void> restore() async {
     final p=await SharedPreferences.getInstance();
+    final shelf=ReadingShelf(p);
+    ReadingEntry? prior;
+    if(widget.ministryDocument!=null){
+      prior=shelf.first(widget.documentId);
+      await shelf.recordOpen(widget.ministryDocument!);
+    }
     if(mounted)setState(() {
-      initial=p.getInt(keyPage)??1;
-      page=initial;bookmarked=p.getBool(keySaved)??false;ready=true;
+      initial=p.getInt(keyPage)??prior?.lastPage??1;
+      page=initial;
+      bookmarked=p.getBool(keySaved)??prior?.favourite??false;
+      ready=true;
     });
   }
   Future<void> savePage(int n) async {
     if(n<1)return;
     if(mounted)setState(()=>page=n);
-    (await SharedPreferences.getInstance()).setInt(keyPage,n);
+    final prefs=await SharedPreferences.getInstance();
+    await prefs.setInt(keyPage,n);
+    if(widget.ministryDocument!=null){
+      await ReadingShelf(prefs).setPage(widget.documentId,n);
+    }
   }
   Future<void> toggle() async {
     final next=!bookmarked;
-    await (await SharedPreferences.getInstance()).setBool(keySaved,next);
+    final prefs=await SharedPreferences.getInstance();
+    await prefs.setBool(keySaved,next);
+    if(widget.ministryDocument!=null){
+      await ReadingShelf(prefs).setFavourite(widget.ministryDocument!,next);
+    }
     if(mounted)setState(()=>bookmarked=next);
   }
   Future<void> jump() async {
