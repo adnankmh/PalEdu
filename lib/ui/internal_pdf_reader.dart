@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'design.dart';
 
 /// View streaming remote PDFs inside PalEdu, including private signed URLs.
 /// The application does not redistribute or bundle ministry-owned books.
@@ -55,8 +54,6 @@ class _InternalPdfReaderState extends State<InternalPdfReader> {
       result<1||result>controller.pageCount)return;
     await controller.goToPage(pageNumber:result);
   }
-  @override
-  void dispose(){controller.dispose();super.dispose();}
   @override
   Widget build(BuildContext context){
     final uri=Uri.tryParse(widget.url);

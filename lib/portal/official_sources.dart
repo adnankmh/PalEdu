@@ -157,6 +157,6 @@ class _OfficialSourcesScreenState extends State<OfficialSourcesScreen> {
           'لكن قراءة الملف نفسه دون إنترنت تحتاج إلى تنزيل مرخّص.',
           textAlign:TextAlign.center,style:TextStyle(fontSize:11.5,
             color:Theme.of(context).colorScheme.onSurfaceVariant)),
-      ])))),
+      ]))),
   );
 }
