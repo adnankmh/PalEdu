@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/models.dart';
 import 'state/student_state.dart';
 import 'ui/design.dart';
+import 'ui/royal_motion.dart';
 import 'ui/royal_student_home.dart';
 import 'ui/royal_subject_library.dart';
 import 'ui/royal_lesson_reader.dart';
@@ -247,6 +248,13 @@ class _HomeShellState extends State<HomeShell> {
           title: const Text('الوضع الليلي'),
           secondary: const Icon(Icons.dark_mode_outlined)),
         const Divider(),
+        SwitchListTile(
+          value:s.animationsEnabled,
+          title:const Text('الحركات التعليمية'),
+          subtitle:const Text('حركات خفيفة مع احترام إعدادات تقليل الحركة'),
+          secondary:const Icon(Icons.animation_rounded),
+          onChanged:(value)=>s.appearance(motion:value)),
+        const Divider(),
         const Text('حجم الخط'),
         Slider(value: s.scale, min: .9, max: 1.3, divisions: 4,
           onChanged: (v) => s.appearance(textScale: v)),
@@ -311,8 +319,13 @@ class _QuizPageState extends State<QuizPage> {
       body: safe(ListView(padding: const EdgeInsets.all(20), children: [
         if (finished) ...[
           const SizedBox(height: 50),
-          const Icon(Icons.emoji_events_rounded,
-            size: 90, color: PColors.gold),
+          Center(child:RoyalMotionGraphic(
+            asset:'assets/animations/achievement_stars.json',
+            fallback:Icons.emoji_events_rounded,
+            enabled:widget.student.animationsEnabled&&
+              score*100>=all.length*70,
+            label:'نتيجة الاختبار',
+            size:140)),
           const SizedBox(height: 18),
           const Center(child: Text('أحسنت! أنهيت التحدّي',
             style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900))),

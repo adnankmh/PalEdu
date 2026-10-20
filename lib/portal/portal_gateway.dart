@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models.dart';
 import '../state/student_state.dart';
 import '../ui/design.dart';
+import '../ui/royal_motion.dart';
 import '../main.dart' show HomeShell, SetupScreen;
 import 'portal_service.dart';
 import 'portal_studio.dart';
@@ -88,7 +89,15 @@ class PortalWelcome extends StatelessWidget {
               colors:[PColors.midnight,PColors.royal,Color(0xFF087E83)]),
             borderRadius:BorderRadius.circular(30)),
           child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            const Icon(Icons.auto_stories_rounded,color:PColors.gold,size:52),
+            Row(children:[
+              const RoyalBrandCrest(size:68),
+              const SizedBox(width:9),
+              RoyalMotionGraphic(
+                asset:'assets/animations/welcome_book.json',
+                fallback:Icons.auto_stories_rounded,
+                enabled:student.animationsEnabled,
+                label:'كتاب المعرفة',size:78),
+            ]),
             const SizedBox(height:16),
             const Text('PalEdu | تعلّم فلسطين',
               style:TextStyle(color:Colors.white,fontSize:28,
