@@ -270,8 +270,20 @@ class _HomeShellState extends State<HomeShell> {
           builder:(_)=>RoyalAchievementsScreen(
             student:s,
             lessons:widget.catalog.forStudent(s.grade,s.track),
-            onPractice:()=>Navigator.pop(context),
-            onSubjects:()=>Navigator.pop(context),
+            onPractice:(){
+              Navigator.pop(context);
+              final lessons=widget.catalog.forStudent(s.grade,s.track);
+              if(s.dueCount(lessons.map((l)=>l.id))>0) {
+                Navigator.push(context,MaterialPageRoute<void>(
+                  builder:(_)=>ReviewScreen(lessons:lessons,student:s)));
+              } else {
+                setState(()=>tab=1);
+              }
+            },
+            onSubjects:(){
+              Navigator.pop(context);
+              setState(()=>tab=1);
+            },
           ))))),
       const SizedBox(height: 13),
       Panel(child: Column(children: [
