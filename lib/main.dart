@@ -8,6 +8,7 @@ import 'ui/design.dart';
 import 'ui/royal_motion.dart';
 import 'ui/paledu_brand.dart';
 import 'ui/royal_student_home.dart';
+import 'ui/royal_achievements.dart';
 import 'ui/royal_subject_library.dart';
 import 'ui/royal_lesson_reader.dart';
 import 'portal/portal_service.dart';
@@ -164,6 +165,23 @@ class _HomeShellState extends State<HomeShell> {
           student:s,lessons:lessons,
           onSubjects:()=>setState(()=>tab=1),
           onGames:()=>setState(()=>tab=2),
+          onAchievements:()=>Navigator.push(context,
+            MaterialPageRoute<void>(builder:(_)=>RoyalAchievementsScreen(
+              student:s,lessons:lessons,
+              onPractice:(){
+                Navigator.pop(context);
+                if(s.dueCount(lessons.map((l)=>l.id))>0){
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>ReviewScreen(lessons:lessons,student:s)));
+                }else {
+                  setState(()=>tab=1);
+                }
+              },
+              onSubjects:(){
+                Navigator.pop(context);
+                setState(()=>tab=1);
+              },
+            ))),
           onReview:()=>Navigator.push(context,MaterialPageRoute<void>(
             builder:(_)=>ReviewScreen(lessons:lessons,student:s))),
           onOfficialSources:()=>Navigator.push(context,MaterialPageRoute<void>(
@@ -241,6 +259,32 @@ class _HomeShellState extends State<HomeShell> {
           icon: const Icon(Icons.edit_outlined),
           label: const Text('تعديل صفّي')),
       ])),
+      const SizedBox(height: 13),
+      Card(child:ListTile(
+        leading:const Icon(Icons.emoji_events_rounded,color:PColors.orange),
+        title:const Text('لوحة إنجازاتي',
+          style:TextStyle(fontWeight:FontWeight.w900)),
+        subtitle:const Text('شاراتي • هدفي اليومي • متابعة الأسبوع'),
+        trailing:const Icon(Icons.chevron_left_rounded),
+        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+          builder:(_)=>RoyalAchievementsScreen(
+            student:s,
+            lessons:widget.catalog.forStudent(s.grade,s.track),
+            onPractice:(){
+              Navigator.pop(context);
+              final lessons=widget.catalog.forStudent(s.grade,s.track);
+              if(s.dueCount(lessons.map((l)=>l.id))>0) {
+                Navigator.push(context,MaterialPageRoute<void>(
+                  builder:(_)=>ReviewScreen(lessons:lessons,student:s)));
+              } else {
+                setState(()=>tab=1);
+              }
+            },
+            onSubjects:(){
+              Navigator.pop(context);
+              setState(()=>tab=1);
+            },
+          ))))),
       const SizedBox(height: 13),
       Panel(child: Column(children: [
         SwitchListTile(value: s.darkMode,

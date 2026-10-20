@@ -25,6 +25,7 @@ void main() {
           child:Scaffold(body:RoyalStudentHome(
             student:student,lessons:const [sample],
             onSubjects:(){},onGames:(){},onReview:(){},
+            onAchievements:(){},
             onOfficialSources:(){},onLesson:(_){},
           )))));
       expect(find.text('مرحباً، أحمد'), findsOneWidget);

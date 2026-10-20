@@ -16,6 +16,9 @@ class StudentState extends ChangeNotifier {
         completed = (prefs.getStringList('completed') ?? []).toSet(),
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
         xp = prefs.getInt('xp') ?? 0 {
+    practiceDays.addAll(_readDailyCount(prefs.getString('practice_days_v1')));
+    firstCompletionDays.addAll(_readDailyCount(
+      prefs.getString('lesson_first_days_v1')));
     try {
       final data = jsonDecode(prefs.getString('reviews_v1') ?? '{}');
       if (data is Map) {
@@ -51,6 +54,40 @@ class StudentState extends ChangeNotifier {
   int xp;
   final Map<String, ReviewSchedule> reviews = {};
   final Map<String,String> notes = {};
+  // Counts only, held on the device and erased with the local profile.
+  final Map<String,int> practiceDays = {};
+  final Map<String,int> firstCompletionDays = {};
+
+  static Map<String,int> _readDailyCount(String? raw) {
+    if(raw==null)return {};
+    try {
+      final input=jsonDecode(raw);
+      if(input is! Map)return {};
+      final result=<String,int>{};
+      for(final pair in input.entries){
+        if(pair.key is! String||pair.value is! int)continue;
+        final key=pair.key as String, count=pair.value as int;
+        final date=DateTime.tryParse(key);
+        if(date==null||ReviewSchedule.dayKey(date)!=key ||
+          count<1||count>999)continue;
+        result[key]=count;
+      }
+      return result;
+    } catch (_){ return {}; }
+  }
+
+  Future<void> _saveActivity() async {
+    void limit(Map<String,int> values) {
+      final sorted=values.keys.toList()..sort();
+      final removeCount=(sorted.length-180).clamp(0,sorted.length);
+      for(final key in sorted.take(removeCount)){values.remove(key);}
+    }
+    limit(practiceDays);
+    limit(firstCompletionDays);
+    await prefs.setString('practice_days_v1',jsonEncode(practiceDays));
+    await prefs.setString('lesson_first_days_v1',
+      jsonEncode(firstCompletionDays));
+  }
 
   bool get configured => prefs.getBool('configured') ?? false;
   bool done(String id) => completed.contains(id);
@@ -85,19 +122,25 @@ class StudentState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> finish(String id, int score, int total) async {
+  Future<void> finish(String id, int score, int total,{DateTime? now}) async {
     if (total <= 0 || score < 0 || score > total) {
       throw ArgumentError('Invalid score');
     }
+    final timestamp=now??DateTime.now();
+    final day=ReviewSchedule.dayKey(timestamp);
+    practiceDays[day]=((practiceDays[day]??0)+1).clamp(1,999);
     if (completed.add(id)) {
+      firstCompletionDays[day]=
+        ((firstCompletionDays[day]??0)+1).clamp(1,999);
       xp += score * 10 + 10;
       await prefs.setStringList('completed', completed.toList()..sort());
       await prefs.setInt('xp', xp);
     }
     reviews[id] = ReviewSchedule.next(
-      (score * 100 / total).round(), DateTime.now(), previous: reviews[id]);
+      (score * 100 / total).round(), timestamp, previous: reviews[id]);
     await prefs.setString('reviews_v1', jsonEncode(
       reviews.map((id, review) => MapEntry(id, review.toJson()))));
+    await _saveActivity();
     notifyListeners();
   }
 
@@ -126,7 +169,7 @@ class StudentState extends ChangeNotifier {
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
       'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1',
-      'animationsEnabled']) {
+      'animationsEnabled','practice_days_v1','lesson_first_days_v1']) {
       await prefs.remove(key);
     }
     await ReadingShelf(prefs).clear();
@@ -137,7 +180,8 @@ class StudentState extends ChangeNotifier {
       await prefs.remove(key);
     }
     name=''; grade=1; track='عام'; darkMode=false; animationsEnabled=true; scale=1;
-    completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear();
+    completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear(); practiceDays.clear();
+    firstCompletionDays.clear();
     notifyListeners();
   }
 }

@@ -10,10 +10,11 @@ import 'paledu_brand.dart';
 class RoyalStudentHome extends StatelessWidget {
   const RoyalStudentHome({super.key,required this.student,required this.lessons,
     required this.onSubjects,required this.onGames,required this.onReview,
+    required this.onAchievements,
     required this.onOfficialSources,required this.onLesson});
   final StudentState student;
   final List<Lesson> lessons;
-  final VoidCallback onSubjects,onGames,onReview,onOfficialSources;
+  final VoidCallback onSubjects,onGames,onReview,onOfficialSources,onAchievements;
   final void Function(Lesson) onLesson;
 
   @override
@@ -80,6 +81,9 @@ class RoyalStudentHome extends StatelessWidget {
             SizedBox(width:width,child:RoyalQuickAction(
               icon:Icons.extension_rounded,label:'الألعاب',
               color:const Color(0xFF8763B8),onTap:onGames)),
+            SizedBox(width:width,child:RoyalQuickAction(
+              icon:Icons.emoji_events_rounded,label:'إنجازاتي',
+              color:PColors.orange,onTap:onAchievements)),
           ]);
         }),
         const SizedBox(height:18),
