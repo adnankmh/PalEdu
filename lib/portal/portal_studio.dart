@@ -3,6 +3,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../ui/internal_pdf_reader.dart';
 import '../ui/internal_video_player.dart';
+import '../ui/internal_image_viewer.dart';
+import '../data/resource_media.dart';
 import '../data/models.dart';
 import '../ui/design.dart';
 import '../ui/royal_portal_components.dart';
@@ -113,7 +115,7 @@ class _ResourceComposerState extends State<ResourceComposer> {
   final rights=TextEditingController();
   final link=TextEditingController();
   String kind='book',branch='عام',fileName='';
-  int grade=1;
+  int grade=1,semester=1;
   Uint8List? bytes;
   bool sending=false;
   @override
@@ -125,11 +127,12 @@ class _ResourceComposerState extends State<ResourceComposer> {
     try {
       final result=await FilePicker.platform.pickFiles(
         type:FileType.custom,
-        allowedExtensions:['pdf','mp4','jpg','jpeg','png'],
+        allowedExtensions:ResourceMedia.extensions[kind]!,
         withData:true);
       if(result==null) return;
       final file=result.files.single;
       if(file.size>50*1024*1024) throw ArgumentError('Large file');
+      if(!ResourceMedia.acceptsFile(kind,file.name)) throw ArgumentError('Unsupported format');
       if(file.bytes==null) throw ArgumentError('No file data');
       if(mounted)setState((){bytes=file.bytes;fileName=file.name;});
     } catch (_) {
@@ -143,7 +146,8 @@ class _ResourceComposerState extends State<ResourceComposer> {
     try {
       await PortalService.instance.submit(
         title:title.text,summary:summary.text,subject:subject.text,
-        kind:kind,grade:grade,branch:branch,rights:rights.text,
+        kind:kind,grade:grade,branch:branch,semester:semester,
+        rights:rights.text,
         bytes:bytes,fileName:bytes==null?null:fileName,
         url:link.text.trim().isEmpty?null:link.text.trim());
       if(mounted) {
@@ -180,7 +184,14 @@ class _ResourceComposerState extends State<ResourceComposer> {
             DropdownMenuItem(value:'handout',child:Text('ملزمة / ورقة عمل')),
             DropdownMenuItem(value:'video',child:Text('فيديو')),
             DropdownMenuItem(value:'lesson',child:Text('درس / محتوى تفاعلي')),
-          ],onChanged:(v)=>setState(()=>kind=v??'book')),
+          ],onChanged:(v)=>setState((){
+            kind=v??'book';
+            bytes=null;fileName='';
+          })),
+        const SizedBox(height:8),
+        Text(ResourceMedia.description(kind),
+          style:TextStyle(fontSize:12,
+            color:Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height:10),
         DropdownButtonFormField<int>(
           initialValue:grade,isExpanded:true,
@@ -200,17 +211,26 @@ class _ResourceComposerState extends State<ResourceComposer> {
             onChanged:(v)=>setState(()=>branch=v??'علمي')),
         ],
         const SizedBox(height:10),
+        DropdownButtonFormField<int>(
+          initialValue:semester,
+          decoration:const InputDecoration(labelText:'الفصل الدراسي'),
+          items:const [
+            DropdownMenuItem(value:1,child:Text('الفصل الدراسي الأول')),
+            DropdownMenuItem(value:2,child:Text('الفصل الدراسي الثاني')),
+          ],
+          onChanged:(v)=>setState(()=>semester=v??1)),
+        const SizedBox(height:10),
         TextField(controller:summary,maxLines:3,
           decoration:const InputDecoration(labelText:'ملخص المادة')),
         const SizedBox(height:10),
         OutlinedButton.icon(
           onPressed:pick,icon:const Icon(Icons.upload_file_rounded),
-          label:Text(fileName.isEmpty?'اختيار PDF أو فيديو أو صورة':fileName)),
+          label:Text(fileName.isEmpty?'اختيار ملف '+ResourceMedia.description(kind):fileName)),
         const SizedBox(height:10),
         TextField(controller:link,
           keyboardType:TextInputType.url,
           decoration:const InputDecoration(
-            labelText:'رابط HTTPS (بديل للملف)',
+            labelText:'رابط HTTPS مباشر مطابق لنوع المحتوى (بديل للملف)',
             prefixIcon:Icon(Icons.link))),
         const SizedBox(height:10),
         TextField(controller:rights,maxLines:3,minLines:2,
@@ -355,22 +375,31 @@ class PublishedLibrary extends StatefulWidget {
 }
 class _PublishedLibraryState extends State<PublishedLibrary> {
   late Future<List<Map<String,dynamic>>> future;
-  String query='',kind='all';
+  String query='',kind='all',semesterFilter='all';
   @override
   void initState() {
-    super.initState();future=PortalService.instance.published(widget.grade);
+    super.initState();refresh();
   }
+  void refresh()=>future=PortalService.instance.published(widget.grade);
   Future<void> open(Map<String,dynamic> item) async {
     try {
       final link=await PortalService.instance.accessUrl(item);
       if(!mounted)return;
       final name=item['title']?.toString()??'مادة تعليمية';
       final id=item['resource_id']?.toString()??link;
-      final kind=item['kind']?.toString()??'';
+      final format=ResourceMedia.forResource(item);
+      if(format==null){
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:Text('نوع هذا المورد غير مدعوم للعرض داخل التطبيق.')));
+        return;
+      }
       await Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>
-        kind=='video'
-          ?InternalVideoPlayer(title:name,url:link)
-          :InternalPdfReader(title:name,url:link,documentId:id)));
+        switch(format){
+          ResourceFormat.video=>InternalVideoPlayer(title:name,url:link),
+          ResourceFormat.image=>InternalImageViewer(title:name,url:link),
+          ResourceFormat.pdf=>InternalPdfReader(
+            title:name,url:link,documentId:id),
+        }));
     } catch (_) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content:Text('لا يمكن فتح المادة حالياً؛ تحقق من الاتصال والصلاحيات')));
@@ -378,7 +407,10 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
   }
   @override
   Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('مكتبة المناهج والموارد')),
+    appBar:AppBar(title:const Text('مكتبة المناهج والموارد'),
+      actions:[IconButton(tooltip:'تحديث الموارد',
+        icon:const Icon(Icons.refresh_rounded),
+        onPressed:()=>setState(refresh))]),
     body:_page(ListView(padding:const EdgeInsets.all(20),children:[
       Text('مكتبة الصف '+widget.grade.toString(),
         style:const TextStyle(fontSize:24,fontWeight:FontWeight.w900)),
@@ -393,6 +425,15 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
           ChoiceChip(label:Text(entry.value),selected:kind==entry.key,
             onSelected:(_)=>setState(()=>kind=entry.key)),
       ]),
+      const SizedBox(height:12),
+      Wrap(spacing:8,runSpacing:7,children:[
+        for(final option in const [
+          ('all','كلا الفصلين'),('1','الفصل الأول'),('2','الفصل الثاني')
+        ])
+          ChoiceChip(label:Text(option.$2),
+            selected:semesterFilter==option.$1,
+            onSelected:(_)=>setState(()=>semesterFilter=option.$1)),
+      ]),
       const SizedBox(height:15),
       FutureBuilder<List<Map<String,dynamic>>>(future:future,builder:(context,snapshot){
         if(snapshot.hasError) return const Panel(
@@ -400,22 +441,29 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
         if(!snapshot.hasData) return const Center(child:CircularProgressIndicator());
         final list=snapshot.data!.where((item)=>
           (kind=='all'||item['kind']==kind) &&
+          (semesterFilter=='all'||item['semester']==null||
+             item['semester']==int.tryParse(semesterFilter)) &&
           (widget.grade<=10||widget.branch=='عام'||
             item['branch']==widget.branch||item['branch']=='عام') &&
-          ((item['title']?.toString()??'').contains(query) ||
-          (item['subject']?.toString()??'').contains(query))).toList();
+          ((item['title']?.toString()??'').toLowerCase().contains(query.toLowerCase()) ||
+          (item['subject']?.toString()??'').toLowerCase().contains(query.toLowerCase()))).toList();
         if(list.isEmpty) return const Panel(
           child:Text('لا توجد مواد منشورة لهذا الصف أو البحث بعد.'));
         return Column(children:[
           for(final item in list)
             Padding(padding:const EdgeInsets.only(bottom:9),
               child:Panel(child:ListTile(
-                leading:Icon(item['kind']=='video'?
-                  Icons.play_circle_outline:Icons.book_rounded,
+                leading:Icon(
+                  item['kind']=='video'?Icons.play_circle_outline_rounded:
+                  item['kind']=='handout'?Icons.description_outlined:
+                  item['kind']=='lesson'?Icons.school_outlined:
+                  Icons.menu_book_rounded,
                   color:PColors.teal,size:34),
                 title:Text(item['title']?.toString()??''),
-                subtitle:Text(item['subject']?.toString()??''),
-                trailing:const Icon(Icons.open_in_new),
+                subtitle:Text((item['subject']?.toString()??'')+
+                  (item['semester']==null?'':' • الفصل '+item['semester'].toString())+
+                  ' • '+ResourceMedia.description(item['kind']?.toString()??'')),
+                trailing:const Icon(Icons.chevron_left_rounded),
                 onTap:()=>open(item)))),
         ]);
       }),
