@@ -33,7 +33,7 @@ class InternalImageViewer extends StatelessWidget {
                   padding:EdgeInsets.all(22),
                   child:Text('تعذّر تحميل الصورة. تحقق من الإنترنت وصلاحية الملف.',
                     textAlign:TextAlign.center))),
-            ))),
+            )))),
         ]),
     );
   }
