@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models.dart';
 import '../data/reading_shelf.dart';
 import '../data/review_schedule.dart';
+import '../data/mistake_notebook.dart';
 
 class StudentState extends ChangeNotifier {
   StudentState(this.prefs)
@@ -16,6 +17,7 @@ class StudentState extends ChangeNotifier {
         completed = (prefs.getStringList('completed') ?? []).toSet(),
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
         xp = prefs.getInt('xp') ?? 0 {
+    mistakes=MistakeNotebook(prefs);
     practiceDays.addAll(_readDailyCount(prefs.getString('practice_days_v1')));
     firstCompletionDays.addAll(_readDailyCount(
       prefs.getString('lesson_first_days_v1')));
@@ -43,6 +45,7 @@ class StudentState extends ChangeNotifier {
   }
 
   final SharedPreferences prefs;
+  late final MistakeNotebook mistakes;
   String name;
   int grade;
   String track;
@@ -144,6 +147,18 @@ class StudentState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Saves wrong-question fingerprints after each completed full lesson quiz.
+  /// Never serializes answer text or personal identifying information.
+  Future<void> recordQuizAnswers(Lesson lesson,Map<int,bool> answers) async {
+    await mistakes.record(lesson,answers);
+    notifyListeners();
+  }
+
+  Future<void> resolveWrongAnswer(Lesson lesson,int index) async {
+    await mistakes.resolve(lesson,index);
+    notifyListeners();
+  }
+
   Future<void> toggleSaved(String id) async {
     if (!favourites.add(id)) favourites.remove(id);
     await prefs.setStringList('favourites', favourites.toList()..sort());
@@ -173,6 +188,7 @@ class StudentState extends ChangeNotifier {
       await prefs.remove(key);
     }
     await ReadingShelf(prefs).clear();
+    await mistakes.clear();
     // Legacy per-book metadata is deleted alongside the new reading shelf.
     for(final key in prefs.getKeys().where((v)=>
       v.startsWith('paledu_pdf_page_')||

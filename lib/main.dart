@@ -9,6 +9,7 @@ import 'ui/royal_motion.dart';
 import 'ui/paledu_brand.dart';
 import 'ui/royal_student_home.dart';
 import 'ui/royal_achievements.dart';
+import 'ui/royal_mistake_notebook.dart';
 import 'ui/royal_subject_library.dart';
 import 'ui/royal_lesson_reader.dart';
 import 'portal/portal_service.dart';
@@ -165,6 +166,9 @@ class _HomeShellState extends State<HomeShell> {
           student:s,lessons:lessons,
           onSubjects:()=>setState(()=>tab=1),
           onGames:()=>setState(()=>tab=2),
+          onMistakes:()=>Navigator.push(context,
+            MaterialPageRoute<void>(builder:(_)=>RoyalMistakeNotebook(
+              student:s,lessons:lessons))),
           onAchievements:()=>Navigator.push(context,
             MaterialPageRoute<void>(builder:(_)=>RoyalAchievementsScreen(
               student:s,lessons:lessons,
@@ -216,6 +220,16 @@ class _HomeShellState extends State<HomeShell> {
         fontSize: 25, fontWeight: FontWeight.w900)),
       const SizedBox(height: 6),
       const Text('بطاقات ذاكرة وألعاب مطابقة في كل درس'),
+      const SizedBox(height:11),
+      Card(child:ListTile(
+        leading:const Icon(Icons.psychology_alt_rounded,color:PColors.orange),
+        title:const Text('دفتر أخطائي',
+          style:TextStyle(fontWeight:FontWeight.w900)),
+        subtitle:const Text('تدرّب على أسئلتك الخاطئة من اختبارات الدروس'),
+        trailing:const Icon(Icons.chevron_left_rounded),
+        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+          builder:(_)=>RoyalMistakeNotebook(
+            student:widget.student,lessons:lessons))))),
       const SizedBox(height: 17),
       for (final lesson in lessons) ...[
         Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,6 +273,16 @@ class _HomeShellState extends State<HomeShell> {
           icon: const Icon(Icons.edit_outlined),
           label: const Text('تعديل صفّي')),
       ])),
+      const SizedBox(height: 13),
+      Card(child:ListTile(
+        leading:const Icon(Icons.psychology_alt_rounded,color:PColors.orange),
+        title:const Text('دفتر أخطائي',
+          style:TextStyle(fontWeight:FontWeight.w900)),
+        subtitle:const Text('راجع أخطاء الاختبارات حتى تتقنها'),
+        trailing:const Icon(Icons.chevron_left_rounded),
+        onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+          builder:(_)=>RoyalMistakeNotebook(
+            student:s,lessons:widget.catalog.forStudent(s.grade,s.track)))))),
       const SizedBox(height: 13),
       Card(child:ListTile(
         leading:const Icon(Icons.emoji_events_rounded,color:PColors.orange),
@@ -355,6 +379,7 @@ class _QuizPageState extends State<QuizPage> {
   int? selected;
   int score=0;
   bool finished=false;
+  final Map<int,bool> answers={};
   @override
   Widget build(BuildContext context) {
     final all=widget.lesson.questions;
@@ -381,6 +406,7 @@ class _QuizPageState extends State<QuizPage> {
           const SizedBox(height: 10),
           OutlinedButton(onPressed: () => setState(() {
             index=0; selected=null; score=0; finished=false;
+            answers.clear();
           }), child: const Text('أعد التحدي')),
         ] else ...[
           Text('السؤال ' + (index+1).toString() +
@@ -395,6 +421,7 @@ class _QuizPageState extends State<QuizPage> {
             Card(child: InkWell(
               onTap: selected != null ? null : () => setState(() {
                 selected=i;
+                answers[index]=i==q.correct;
                 if (i == q.correct) score++;
               }),
               child: Padding(padding: const EdgeInsets.all(18),
@@ -415,6 +442,7 @@ class _QuizPageState extends State<QuizPage> {
             FilledButton(onPressed: () async {
               if (index+1 == all.length) {
                 await widget.student.finish(widget.lesson.id, score, all.length);
+                await widget.student.recordQuizAnswers(widget.lesson,answers);
                 if (mounted) setState(() => finished=true);
               } else {
                 setState(() { index++; selected=null; });
