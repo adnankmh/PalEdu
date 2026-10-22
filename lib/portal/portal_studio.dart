@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../data/media_favourites.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../ui/internal_pdf_reader.dart';
@@ -376,9 +378,36 @@ class PublishedLibrary extends StatefulWidget {
 class _PublishedLibraryState extends State<PublishedLibrary> {
   late Future<List<Map<String,dynamic>>> future;
   String query='',kind='all',semesterFilter='all';
+  bool onlySaved=false;
+  Set<String> savedIds=<String>{};
+  MediaFavourites? favouriteStore;
+
+  Future<void> loadFavourites() async {
+    final userId=PortalService.instance.user?.id;
+    if(userId==null)return;
+    final prefs=await SharedPreferences.getInstance();
+    if(!mounted)return;
+    final store=MediaFavourites(prefs,userId:userId);
+    setState((){
+      favouriteStore=store;
+      savedIds=store.getAll();
+    });
+  }
+
+  Future<void> toggleFavourite(String id) async {
+    final store=favouriteStore;
+    if(store==null)return;
+    try{
+      await store.toggle(id);
+      if(mounted)setState(()=>savedIds=store.getAll());
+    }catch(_){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('تعذّر حفظ المادة، حاول مرة أخرى.')));
+    }
+  }
   @override
   void initState() {
-    super.initState();refresh();
+    super.initState();refresh();loadFavourites();
   }
   void refresh()=>future=PortalService.instance.published(widget.grade);
   Future<void> open(Map<String,dynamic> item) async {
@@ -434,12 +463,25 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
             selected:semesterFilter==option.$1,
             onSelected:(_)=>setState(()=>semesterFilter=option.$1)),
       ]),
+      const SizedBox(height:8),
+      Wrap(spacing:8,runSpacing:6,children:[
+        FilterChip(
+          avatar:const Icon(Icons.bookmark_rounded,size:17),
+          label:Text('مفضلتي ('+savedIds.length.toString()+')'),
+          selected:onlySaved,
+          onSelected:(value)=>setState(()=>onlySaved=value)),
+        if(favouriteStore==null)
+          const Padding(padding:EdgeInsets.symmetric(vertical:8),
+            child:Text('تسجيل الدخول مطلوب لحفظ المفضلة.',
+              style:TextStyle(fontSize:11))),
+      ]),
       const SizedBox(height:15),
       FutureBuilder<List<Map<String,dynamic>>>(future:future,builder:(context,snapshot){
         if(snapshot.hasError) return const Panel(
           child:Text('تعذر تحميل المكتبة. تحقق من الاتصال والصلاحيات.'));
         if(!snapshot.hasData) return const Center(child:CircularProgressIndicator());
         final list=snapshot.data!.where((item)=>
+          (!onlySaved||savedIds.contains(item['resource_id']?.toString())) &&
           (kind=='all'||item['kind']==kind) &&
           (semesterFilter=='all'||item['semester']==null||
              item['semester']==int.tryParse(semesterFilter)) &&
@@ -447,8 +489,9 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
             item['branch']==widget.branch||item['branch']=='عام') &&
           ((item['title']?.toString()??'').toLowerCase().contains(query.toLowerCase()) ||
           (item['subject']?.toString()??'').toLowerCase().contains(query.toLowerCase()))).toList();
-        if(list.isEmpty) return const Panel(
-          child:Text('لا توجد مواد منشورة لهذا الصف أو البحث بعد.'));
+        if(list.isEmpty) return Panel(child:Text(onlySaved
+          ?'لا توجد مواد محفوظة تطابق البحث. افتح عرض الكل وأضف كتبك أو فيديوهاتك المفضلة.'
+          :'لا توجد مواد منشورة لهذا الصف أو البحث بعد.'));
         return Column(children:[
           for(final item in list)
             Padding(padding:const EdgeInsets.only(bottom:9),
@@ -463,7 +506,15 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
                 subtitle:Text((item['subject']?.toString()??'')+
                   (item['semester']==null?'':' • الفصل '+item['semester'].toString())+
                   ' • '+ResourceMedia.description(item['kind']?.toString()??'')),
-                trailing:const Icon(Icons.chevron_left_rounded),
+                trailing:IconButton(
+                  tooltip:savedIds.contains(item['resource_id']?.toString())
+                    ?'إزالة من مفضلتي':'حفظ في مفضلتي',
+                  onPressed:favouriteStore==null?null:()=>
+                    toggleFavourite(item['resource_id']?.toString()??''),
+                  icon:Icon(
+                    savedIds.contains(item['resource_id']?.toString())
+                      ?Icons.bookmark_rounded:Icons.bookmark_outline_rounded,
+                    color:PColors.teal)),
                 onTap:()=>open(item)))),
         ]);
       }),
