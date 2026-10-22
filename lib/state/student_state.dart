@@ -192,7 +192,8 @@ class StudentState extends ChangeNotifier {
     // Legacy per-book metadata is deleted alongside the new reading shelf.
     for(final key in prefs.getKeys().where((v)=>
       v.startsWith('paledu_pdf_page_')||
-      v.startsWith('paledu_pdf_bookmark_')).toList()){
+      v.startsWith('paledu_pdf_bookmark_')||
+      v.startsWith('paledu_video_pos_')).toList()){
       await prefs.remove(key);
     }
     name=''; grade=1; track='عام'; darkMode=false; animationsEnabled=true; scale=1;
