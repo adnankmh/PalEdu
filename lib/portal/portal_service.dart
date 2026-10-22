@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../data/resource_media.dart';
 
 class PortalConfig {
   static const url = String.fromEnvironment('SUPABASE_URL');
@@ -34,7 +35,7 @@ class PortalService {
   }
   Future<List<Map<String,dynamic>>> published(int grade) async {
     final rows=await db.from('paledu_resources')
-      .select('resource_id,title,description,kind,subject,grade,branch,asset_path,external_url')
+      .select('resource_id,title,description,kind,subject,grade,branch,semester,asset_path,external_url')
       .eq('status','published').eq('grade',grade)
       .order('published_at',ascending:false).limit(60);
     return rows.map((x)=>Map<String,dynamic>.from(x)).toList();
@@ -42,7 +43,7 @@ class PortalService {
   Future<List<Map<String,dynamic>>> mine() async {
     if (user==null) throw StateError('Login required');
     final rows=await db.from('paledu_resources')
-      .select('resource_id,title,kind,status,grade,subject')
+      .select('resource_id,title,kind,status,grade,subject,semester')
       .eq('created_by',user!.id).limit(100);
     return rows.map((x)=>Map<String,dynamic>.from(x)).toList();
   }
@@ -61,7 +62,7 @@ class PortalService {
   Future<void> submit({
     required String title,required String summary,required String subject,
     required String kind,required String branch,required int grade,
-    required String rights,Uint8List? bytes,String? fileName,String? url,
+    required String rights,int? semester,Uint8List? bytes,String? fileName,String? url,
   }) async {
     if (user==null) throw StateError('Login required');
     if (title.trim().length<4 || subject.trim().length<2 ||
@@ -70,6 +71,20 @@ class PortalService {
     }
     if (!['book','handout','video','lesson'].contains(kind)) {
       throw ArgumentError('Invalid kind');
+    }
+    if(semester!=null&&semester!=1&&semester!=2) {
+      throw ArgumentError('Invalid semester');
+    }
+    final hasFile=bytes!=null;
+    final external=url?.trim()??'';
+    if(hasFile==external.isNotEmpty){
+      throw ArgumentError('Choose exactly one file OR a direct resource URL');
+    }
+    if(external.isNotEmpty&&!ResourceMedia.acceptsExternal(kind,external)){
+      throw ArgumentError('Unsupported link. Use a direct HTTPS media file');
+    }
+    if(hasFile&&!ResourceMedia.acceptsFile(kind,fileName??'')){
+      throw ArgumentError('Unsupported file type for selected resource');
     }
     String? path;
     if (bytes!=null) {
@@ -84,17 +99,12 @@ class PortalService {
       await db.storage.from('paledu-curriculum').uploadBinary(path,bytes,
         fileOptions:FileOptions(contentType:types[ext],upsert:false));
     }
-    if (url!=null && url.trim().isNotEmpty && Uri.tryParse(url)?.scheme!='https') {
-      throw ArgumentError('Use an HTTPS link');
-    }
-    if (path==null && (url==null || url.trim().isEmpty)) {
-      throw ArgumentError('Choose a file or URL');
-    }
     await db.from('paledu_resources').insert({
       'created_by':user!.id,'title':title.trim(),'description':summary.trim(),
-      'kind':kind,'grade':grade,'branch':branch,'subject':subject.trim(),
+      'kind':kind,'grade':grade,'branch':branch,'semester':semester,
+      'subject':subject.trim(),
       'rights_note':rights.trim(),'asset_path':path,
-      'external_url':url?.trim().isEmpty==true ? null : url?.trim(),
+      'external_url':external.isEmpty?null:external,
       'status':'pending',
     });
   }
