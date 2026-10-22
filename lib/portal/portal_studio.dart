@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/media_favourites.dart';
+import '../data/resource_search.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../ui/internal_pdf_reader.dart';
@@ -487,8 +488,7 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
              item['semester']==int.tryParse(semesterFilter)) &&
           (widget.grade<=10||widget.branch=='عام'||
             item['branch']==widget.branch||item['branch']=='عام') &&
-          ((item['title']?.toString()??'').toLowerCase().contains(query.toLowerCase()) ||
-          (item['subject']?.toString()??'').toLowerCase().contains(query.toLowerCase()))).toList();
+          matchesResourceSearch(item, query)).toList();
         if(list.isEmpty) return Panel(child:Text(onlySaved
           ?'لا توجد مواد محفوظة تطابق البحث. افتح عرض الكل وأضف كتبك أو فيديوهاتك المفضلة.'
           :'لا توجد مواد منشورة لهذا الصف أو البحث بعد.'));
