@@ -395,7 +395,7 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
       }
       await Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>
         switch(format){
-          ResourceFormat.video=>InternalVideoPlayer(title:name,url:link),
+          ResourceFormat.video=>InternalVideoPlayer(title:name,url:link,resourceId:id),
           ResourceFormat.image=>InternalImageViewer(title:name,url:link),
           ResourceFormat.pdf=>InternalPdfReader(
             title:name,url:link,documentId:id),

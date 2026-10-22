@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 import 'design.dart';
 
 /// Streams direct HTTPS MP4/HLS lessons within PalEdu.
 class InternalVideoPlayer extends StatefulWidget {
-  const InternalVideoPlayer({super.key,required this.title,required this.url});
+  const InternalVideoPlayer({super.key,required this.title,required this.url,this.resourceId});
   final String title,url;
+  final String? resourceId;
   @override
   State<InternalVideoPlayer> createState()=>_InternalVideoPlayerState();
 }
@@ -14,6 +18,11 @@ class _InternalVideoPlayerState extends State<InternalVideoPlayer> {
   String? error;
   bool ready=false;
   double speed=1;
+  int lastSavedSecond=-1;
+  bool restored=false;
+  String? get positionKey=>widget.resourceId==null||widget.resourceId!.isEmpty
+    ?null:'paledu_video_pos_'+sha256.convert(
+      utf8.encode(widget.resourceId!)).toString().substring(0,24);
   @override
   void initState(){super.initState();init();}
   Future<void> init() async {
@@ -32,6 +41,17 @@ class _InternalVideoPlayerState extends State<InternalVideoPlayer> {
       final c=VideoPlayerController.networkUrl(uri);
       player=c;
       await c.initialize();
+      final key=positionKey;
+      if(key!=null){
+        try{
+          final prefs=await SharedPreferences.getInstance();
+          final seconds=prefs.getInt(key)??0;
+          if(seconds>=5&&seconds<c.value.duration.inSeconds-8){
+            await c.seekTo(Duration(seconds:seconds));
+          }
+        }catch(_){/* Position persistence is optional. */}
+      }
+      restored=true;
       c.addListener(onChanged);
       if(mounted)setState(()=>ready=true);
     }catch(_){
@@ -39,9 +59,27 @@ class _InternalVideoPlayerState extends State<InternalVideoPlayer> {
         'تعذر تشغيل الفيديو. تحقق من الرابط أو الاتصال.');
     }
   }
-  void onChanged(){if(mounted)setState((){});}
+  void onChanged(){
+    final c=player;
+    if(c!=null&&restored&&positionKey!=null){
+      final seconds=c.value.position.inSeconds;
+      if(seconds>=0&&(lastSavedSecond<0||seconds-lastSavedSecond>=10)){
+        lastSavedSecond=seconds;
+        _storePosition(seconds);
+      }
+    }
+    if(mounted)setState((){});
+  }
+  Future<void> _storePosition(int seconds) async {
+    final key=positionKey;
+    if(key==null)return;
+    try{
+      await (await SharedPreferences.getInstance()).setInt(key,seconds);
+    }catch(_){/* Do not interrupt playback. */}
+  }
   @override
   void dispose(){
+    if(player!=null&&restored)_storePosition(player!.value.position.inSeconds);
     player?.removeListener(onChanged);
     player?.dispose();super.dispose();
   }
