@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/models.dart';
+import '../data/lesson_search.dart';
 import '../state/student_state.dart';
 import 'design.dart';
 
@@ -28,9 +29,7 @@ class _RoyalSubjectLibraryState extends State<RoyalSubjectLibrary> {
   Widget build(BuildContext context) {
     final grouped=<String,List<Lesson>>{};
     for(final lesson in widget.lessons) {
-      final contains=lesson.title.contains(searchText) ||
-        lesson.subject.contains(searchText) ||
-        lesson.summary.contains(searchText);
+      final contains=matchesLessonSearch(lesson, searchText);
       if(contains && (!onlyIncomplete || !widget.student.done(lesson.id))) {
         grouped.putIfAbsent(lesson.subject,()=>[]).add(lesson);
       }
