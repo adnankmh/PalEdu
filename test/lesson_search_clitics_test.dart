@@ -7,7 +7,7 @@ const lessonWithClitic = Lesson(
   grade: 5,
   track: 'عام',
   subject: 'الرياضيات',
-  title: 'الأعداد الطبيعية',
+  title: 'التدرب على الجمع',
   summary: 'تمهيد للأعداد والجمع والطرح',
   sections: <String>['تمارين للأعداد'], 
   questions: <QuizQuestion>[],
