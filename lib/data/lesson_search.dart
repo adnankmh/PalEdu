@@ -10,6 +10,10 @@ String normalizeLessonSearch(String input) => input
     .replaceAll('ؤ', 'و')
     .replaceAll('ئ', 'ي')
     .replaceAll('ة', 'ه')
+    // Arabic "ل" + "ال" contracts to "لل" (e.g. "للأعداد").
+    // Restore the definite article for queries matching "الأعداد".
+    .replaceAllMapped(RegExp(r'(^|\s)لل(?=\S)'),
+        (match) => '${match.group(1)}لال')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
