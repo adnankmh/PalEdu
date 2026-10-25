@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:paledu/data/models.dart';
@@ -28,6 +30,15 @@ void main() {
     final catalog = LessonCatalog.parse(
       File('assets/curriculum/sample_lessons.json').readAsStringSync());
     final student = StudentState(prefs);
+    // Flutter's test engine defaults to Ahem (square placeholder glyphs).
+    // Load the CI runner's existing Arabic-capable font for readable captures.
+    final fontFile=File('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf');
+    if (!fontFile.existsSync()) {
+      throw StateError('Arabic screenshot font unavailable on runner');
+    }
+    final loader=FontLoader('PalEduVisualArabic')
+      ..addFont(Future.value(ByteData.sublistView(fontFile.readAsBytesSync())));
+    await loader.load();
     student.animationsEnabled = false;
     tester.view.physicalSize = const Size(860, 1860);
     tester.view.devicePixelRatio = 2;
@@ -40,7 +51,10 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         debugShowCheckedModeBanner: false,
         locale: const Locale('ar', 'PS'),
-        theme: palTheme(dark),
+        theme: palTheme(dark).copyWith(
+          textTheme: palTheme(dark).textTheme.apply(fontFamily:'PalEduVisualArabic'),
+          primaryTextTheme: palTheme(dark).primaryTextTheme.apply(fontFamily:'PalEduVisualArabic'),
+        ),
         home: Directionality(
           textDirection: TextDirection.rtl,
           child: child,
