@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:paledu/data/models.dart';
@@ -24,8 +24,9 @@ void main() {
       (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final prefs = await SharedPreferences.getInstance();
+    // Avoid awaiting an asset-channel future inside the widget-test fake clock.
     final catalog = LessonCatalog.parse(
-      await rootBundle.loadString('assets/curriculum/sample_lessons.json'));
+      File('assets/curriculum/sample_lessons.json').readAsStringSync());
     final student = StudentState(prefs);
     student.animationsEnabled = false;
     tester.view.physicalSize = const Size(860, 1860);
