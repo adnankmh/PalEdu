@@ -63,7 +63,18 @@ jobs:
             return false;
           };
           // Flutter CanvasKit exposes accessibility semantics on request.
-          try {await page.locator('flt-semantics-placeholder').first().click({timeout:1900});}catch(e){}
+          // Do not activate Flutter's accessibility placeholder: CanvasKit
+          // may place a semantics overlay over pointer targets.
+          page.on('console',m => {
+            if(m.text().startsWith('POINTER') || m.text().startsWith('ELEMENT')) console.log('BROWSER:',m.text());
+          });
+          console.log('TARGET:',await page.evaluate(() => {
+            const e=document.elementFromPoint(215,812);
+            return {tag:e?.tagName,html:e?.outerHTML.slice(0,280)};
+          }));
+          await page.evaluate(()=>{
+            window.addEventListener('pointerdown',e=>console.log('POINTER',e.clientX,e.clientY,e.target.tagName),true);
+          });
           await snap('01-welcome');
           console.log('Semantic text:',(await page.locator('body').innerText()).slice(0,1000));
           // CanvasKit paints glyphs rather than exposing text nodes. The
