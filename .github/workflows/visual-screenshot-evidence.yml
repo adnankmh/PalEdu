@@ -65,25 +65,21 @@ jobs:
           try {await page.locator('flt-semantics-placeholder').first().click({timeout:1900});}catch(e){}
           await snap('01-welcome');
           console.log('Semantic text:',(await page.locator('body').innerText()).slice(0,1000));
-          if(await clickText('معاينة تعليمية دون حساب')){
-            await snap('02-first-setup');
-            try {
-              await page.getByRole('textbox').first().fill('طالب تجريبي',{timeout:2500});
-            }catch(e){}
-            if(await clickText('ابدأ رحلتي')){
-              await snap('03-student-home');
-              if(await clickText('موادي') || await clickText('المواد')){
-                await snap('04-subjects');
-                await clickText('الرياضيات');
-                await snap('05-subject-details');
-              }
-              if(await clickText('الألعاب')) await snap('06-games');
-              if(await clickText('حسابي')){
-                await snap('07-profile');
-                if(await clickText('لوحة إنجازاتي')) await snap('08-achievements');
-              }
-            }
-          }
+          // CanvasKit paints glyphs rather than exposing text nodes. The
+          // next clicks use measured positions from the authentic first capture.
+          await page.mouse.click(215,812);
+          await snap('02-learner-setup');
+          await page.mouse.click(215,567);
+          await snap('03-learner-home');
+          await page.mouse.click(275,891);
+          await snap('04-subject-library');
+          await page.mouse.click(162,891);
+          await snap('05-learning-games');
+          await page.mouse.click(54,891);
+          await snap('06-learner-profile');
+          // Profile includes a dedicated achievements link.
+          await page.mouse.click(210,335);
+          await snap('07-achievements-or-profile');
           await browser.close();
           JAVASCRIPT
       - uses: actions/upload-artifact@v4
