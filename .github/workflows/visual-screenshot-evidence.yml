@@ -25,6 +25,8 @@ jobs:
           flutter create --org io.github.adnankmh --project-name paledu --platforms android,web .
           flutter pub get
           flutter build web --release
+      - name: Capture actual Flutter widgets to PNG using golden renderer
+        run: flutter test --dart-define=PALEDU_CAPTURE_GOLDENS=true --update-goldens test/visual_capture_test.dart --reporter expanded
       - name: Install screenshot browser
         run: |
           npm install --no-save playwright
@@ -98,6 +100,8 @@ jobs:
         if: always()
         with:
           name: PalEdu-Actual-UI-Screenshots
-          path: captures/*.png
+          path: |
+            captures/*.png
+            test/visual/*.png
           if-no-files-found: warn
           retention-days: 14
