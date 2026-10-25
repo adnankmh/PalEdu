@@ -45,7 +45,8 @@ void main() {
           child: child,
         ),
       ));
-      await tester.pumpAndSettle();
+      // Fixed finite frame advance: animated progress must not stall goldens.
+      await tester.pump(const Duration(milliseconds: 1200));
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('visual/$filename.png'),
