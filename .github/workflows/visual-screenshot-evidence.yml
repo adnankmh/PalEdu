@@ -43,11 +43,12 @@ jobs:
           const page = await browser.newPage({
             viewport: {width: 430,height: 930},
             deviceScaleFactor: 2, locale: 'ar-PS',
-            isMobile: true, hasTouch: true
+            isMobile: false, hasTouch: false
           });
           page.on('pageerror', e => console.log('PAGE ERROR:',String(e).slice(0,450)));
           await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded'});
           await page.waitForTimeout(11000);
+          console.log('VIEWPORT:',JSON.stringify(await page.evaluate(() => ({innerWidth:innerWidth,innerHeight:innerHeight,devicePixelRatio:devicePixelRatio,visualWidth:visualViewport.width}))));
           const snap = async name => {
             await page.waitForTimeout(900);
             await page.screenshot({path:'captures/'+name+'.png'});
