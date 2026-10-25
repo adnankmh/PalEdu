@@ -1,0 +1,93 @@
+name: PalEdu authentic Flutter UI captures
+
+on:
+  push:
+    branches:
+      - chore/real-ui-screenshots-20261025
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create native scaffolds and build real Flutter Web
+        run: |
+          flutter create --org io.github.adnankmh --project-name paledu --platforms android,web .
+          flutter pub get
+          flutter build web --release
+      - name: Install screenshot browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Capture real app screens at mobile viewport
+        shell: bash
+        run: |
+          mkdir -p captures
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory build/web > /tmp/paledu_server.log 2>&1 &
+          node --input-type=module <<'JAVASCRIPT'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const browser = await chromium.launch({
+            headless: true, args: ['--no-sandbox','--disable-dev-shm-usage']
+          });
+          const page = await browser.newPage({
+            viewport: {width: 430,height: 930},
+            deviceScaleFactor: 2, locale: 'ar-PS',
+            isMobile: true, hasTouch: true
+          });
+          page.on('pageerror', e => console.log('PAGE ERROR:',String(e).slice(0,450)));
+          await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded'});
+          await page.waitForTimeout(11000);
+          const snap = async name => {
+            await page.waitForTimeout(900);
+            await page.screenshot({path:'captures/'+name+'.png'});
+            console.log('Saved:',name);
+          };
+          const clickText = async text => {
+            for(const selector of [page.getByText(text,{exact:false}),
+                                   page.getByRole('button',{name:text,exact:false})]){
+              try {await selector.first().click({timeout:2300}); return true;}catch(e){}
+            }
+            console.log('Could not locate:',text);
+            return false;
+          };
+          // Flutter CanvasKit exposes accessibility semantics on request.
+          try {await page.locator('flt-semantics-placeholder').first().click({timeout:1900});}catch(e){}
+          await snap('01-welcome');
+          console.log('Semantic text:',(await page.locator('body').innerText()).slice(0,1000));
+          if(await clickText('معاينة تعليمية دون حساب')){
+            await snap('02-first-setup');
+            try {
+              await page.getByRole('textbox').first().fill('طالب تجريبي',{timeout:2500});
+            }catch(e){}
+            if(await clickText('ابدأ رحلتي')){
+              await snap('03-student-home');
+              if(await clickText('موادي') || await clickText('المواد')){
+                await snap('04-subjects');
+                await clickText('الرياضيات');
+                await snap('05-subject-details');
+              }
+              if(await clickText('الألعاب')) await snap('06-games');
+              if(await clickText('حسابي')){
+                await snap('07-profile');
+                if(await clickText('لوحة إنجازاتي')) await snap('08-achievements');
+              }
+            }
+          }
+          await browser.close();
+          JAVASCRIPT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PalEdu-Actual-UI-Screenshots
+          path: captures/*.png
+          if-no-files-found: warn
+          retention-days: 14
