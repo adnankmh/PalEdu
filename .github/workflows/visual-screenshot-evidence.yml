@@ -1,0 +1,56 @@
+name: PalEdu authentic Flutter UI captures
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paledu-ui-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create native scaffolds and build real Flutter Web
+        run: |
+          flutter create --org io.github.adnankmh --project-name paledu --platforms android,web .
+          flutter pub get
+          flutter build web --release
+      - name: Capture actual Flutter widgets with Arabic and icon fonts
+        shell: bash
+        run: |
+          flutter_root="$(dirname "$(dirname "$(readlink -f "$(command -v flutter)")")")"
+          export PALEDU_MATERIAL_ICONS="$flutter_root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf"
+          test -s "$PALEDU_MATERIAL_ICONS"
+          flutter test --dart-define=PALEDU_CAPTURE_GOLDENS=true --update-goldens test/visual_capture_test.dart --reporter expanded
+      - name: Install screenshot browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Capture and verify real app screens through semantic controls
+        shell: bash
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory build/web > /tmp/paledu_server.log 2>&1 &
+          node scripts/capture_ui.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PalEdu-Actual-UI-Screenshots
+          path: |
+            captures/*.png
+            captures/evidence.json
+            captures/failure-semantics.txt
+            test/visual/*.png
+          if-no-files-found: error
+          retention-days: 14
