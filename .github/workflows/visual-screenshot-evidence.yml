@@ -25,83 +25,29 @@ jobs:
           flutter create --org io.github.adnankmh --project-name paledu --platforms android,web .
           flutter pub get
           flutter build web --release
-      - name: Capture actual Flutter widgets to PNG using golden renderer
-        run: flutter test --dart-define=PALEDU_CAPTURE_GOLDENS=true --update-goldens test/visual_capture_test.dart --reporter expanded
+      - name: Capture actual Flutter widgets with Arabic and icon fonts
+        shell: bash
+        run: |
+          flutter_root="$(dirname "$(dirname "$(readlink -f "$(command -v flutter)")")")"
+          export PALEDU_MATERIAL_ICONS="$flutter_root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf"
+          test -s "$PALEDU_MATERIAL_ICONS"
+          flutter test --dart-define=PALEDU_CAPTURE_GOLDENS=true --update-goldens test/visual_capture_test.dart --reporter expanded
       - name: Install screenshot browser
         run: |
           npm install --no-save playwright
           npx playwright install chromium
-      - name: Capture real app screens at mobile viewport
+      - name: Capture and verify real app screens through semantic controls
         shell: bash
         run: |
-          mkdir -p captures
           python3 -m http.server 8765 --bind 127.0.0.1 --directory build/web > /tmp/paledu_server.log 2>&1 &
-          node --input-type=module <<'JAVASCRIPT'
-          import { chromium } from 'playwright';
-          import fs from 'node:fs';
-          const browser = await chromium.launch({
-            headless: true, args: ['--no-sandbox','--disable-dev-shm-usage']
-          });
-          const page = await browser.newPage({
-            viewport: {width: 430,height: 930},
-            deviceScaleFactor: 2, locale: 'ar-PS',
-            isMobile: false, hasTouch: false
-          });
-          page.on('pageerror', e => console.log('PAGE ERROR:',String(e).slice(0,450)));
-          await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded'});
-          await page.waitForTimeout(11000);
-          console.log('VIEWPORT:',JSON.stringify(await page.evaluate(() => ({innerWidth:innerWidth,innerHeight:innerHeight,devicePixelRatio:devicePixelRatio,visualWidth:visualViewport.width}))));
-          const snap = async name => {
-            await page.waitForTimeout(900);
-            await page.screenshot({path:'captures/'+name+'.png'});
-            console.log('Saved:',name);
-          };
-          const clickText = async text => {
-            for(const selector of [page.getByText(text,{exact:false}),
-                                   page.getByRole('button',{name:text,exact:false})]){
-              try {await selector.first().click({timeout:2300}); return true;}catch(e){}
-            }
-            console.log('Could not locate:',text);
-            return false;
-          };
-          // Flutter CanvasKit exposes accessibility semantics on request.
-          // Do not activate Flutter's accessibility placeholder: CanvasKit
-          // may place a semantics overlay over pointer targets.
-          page.on('console',m => {
-            if(m.text().startsWith('POINTER') || m.text().startsWith('ELEMENT')) console.log('BROWSER:',m.text());
-          });
-          console.log('TARGET:',await page.evaluate(() => {
-            const e=document.elementFromPoint(215,812);
-            return {tag:e?.tagName,html:e?.outerHTML.slice(0,280)};
-          }));
-          await page.evaluate(()=>{
-            window.addEventListener('pointerdown',e=>console.log('POINTER',e.clientX,e.clientY,e.target.tagName),true);
-          });
-          await snap('01-welcome');
-          console.log('Semantic text:',(await page.locator('body').innerText()).slice(0,1000));
-          // CanvasKit paints glyphs rather than exposing text nodes. The
-          // next clicks use measured positions from the authentic first capture.
-          await page.mouse.click(215,812);
-          await snap('02-learner-setup');
-          await page.mouse.click(215,567);
-          await snap('03-learner-home');
-          await page.mouse.click(275,891);
-          await snap('04-subject-library');
-          await page.mouse.click(162,891);
-          await snap('05-learning-games');
-          await page.mouse.click(54,891);
-          await snap('06-learner-profile');
-          // Profile includes a dedicated achievements link.
-          await page.mouse.click(210,335);
-          await snap('07-achievements-or-profile');
-          await browser.close();
-          JAVASCRIPT
+          node scripts/capture_ui.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: PalEdu-Actual-UI-Screenshots
           path: |
             captures/*.png
+            captures/evidence.json
             test/visual/*.png
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
