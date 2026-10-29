@@ -1,14 +1,16 @@
 name: PalEdu authentic Flutter UI captures
 
 on:
-  push:
-    branches:
-      - chore/real-ui-screenshots-20261025
+  workflow_dispatch:
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
+
+concurrency:
+  group: paledu-ui-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   screenshots:
@@ -48,6 +50,7 @@ jobs:
           path: |
             captures/*.png
             captures/evidence.json
+            captures/failure-semantics.txt
             test/visual/*.png
           if-no-files-found: error
           retention-days: 14

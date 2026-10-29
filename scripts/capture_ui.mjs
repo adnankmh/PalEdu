@@ -1,7 +1,8 @@
-import { chromium } from 'playwright';
+import { createRequire } from 'node:module';
+const { chromium }=createRequire(import.meta.url)('playwright');
 import { mkdir, writeFile } from 'node:fs/promises';
 
-const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PALEDU_BROWSER_EXECUTABLE||undefined,args:process.env.PALEDU_BROWSER_ARGS?JSON.parse(process.env.PALEDU_BROWSER_ARGS):['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage({viewport:{width:430,height:930},deviceScaleFactor:2,locale:'ar-PS'});
 const errors=[],captures=[];
 page.on('pageerror',error=>errors.push(error.message));
@@ -18,7 +19,14 @@ async function marker(text){
 async function click(label){
   const name=new RegExp(label);
   for(const locator of [page.getByRole('button',{name}),page.getByRole('tab',{name}),page.getByLabel(label,{exact:true}),page.getByText(label,{exact:true})]){
-    try{await locator.first().click({timeout:2500});return}catch{}
+    const target=locator.first();
+    try{await target.click({timeout:2500});return}catch{}
+    // CanvasKit can overlay a selected tab's semantics node over its sibling.
+    // Activate the resolved accessible element directly, then verify the next
+    // screen marker before accepting a screenshot. No coordinate guesses.
+    if(await target.isVisible().catch(()=>false)){
+      await target.evaluate(element=>element.click());return;
+    }
   }
   throw Error('Cannot activate semantic control: '+label);
 }
@@ -50,4 +58,7 @@ try{
   if(errors.length)throw Error('Flutter Web errors: '+errors.join('\n'));
   await writeFile('captures/evidence.json',JSON.stringify({source:process.env.GITHUB_SHA||'local',viewport:{width:430,height:930},captures},null,2));
   console.log('Verified '+captures.length+' real Flutter screens');
+}catch(error){
+  await writeFile('captures/failure-semantics.txt',await page.locator('body').ariaSnapshot());
+  throw error;
 }finally{await browser.close()}
