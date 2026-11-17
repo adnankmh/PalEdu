@@ -51,6 +51,46 @@ void main(){
     expect(report.single.percent,100);
   });
 
+  test('next subject prioritizes least-completed unfinished subject',() {
+    const items=[
+      SubjectProgress('العلوم',1,4,0),
+      SubjectProgress('الرياضيات',2,2,2),
+      SubjectProgress('اللغة العربية',1,2,1),
+    ];
+    expect(nextSubjectToStudy(items)?.subject,'العلوم');
+    expect(nextSubjectToStudy(items)?.total,4);
+    expect(nextSubjectToStudy(const [
+      SubjectProgress('الرياضيات',2,2,2),
+    ]),isNull);
+    expect(nextSubjectToStudy(const []),isNull);
+  });
+
+  test('priority ties use remaining lessons then stable subject name',() {
+    const items=[
+      SubjectProgress('العلوم',1,2,0),
+      SubjectProgress('الرياضيات',2,4,0),
+      SubjectProgress('اللغة العربية',2,4,0),
+    ];
+    expect(nextSubjectToStudy(items)?.subject,'الرياضيات');
+    expect(nextSubjectToStudy(const [
+      SubjectProgress('العلوم',0,1,0),
+      SubjectProgress('الرياضيات',0,3,0),
+    ])?.subject,'الرياضيات');
+  });
+
+  testWidgets('private next-study hint uses actual unfinished lessons',(tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final student=StudentState(await SharedPreferences.getInstance());
+    await student.finish('a1',9,10,now:DateTime(2026,11,17));
+    await tester.pumpWidget(MaterialApp(
+      theme:palTheme(false),
+      home:Directionality(textDirection:TextDirection.rtl,
+        child:SubjectProgressReport(student:student,lessons:lessons))));
+    expect(find.text('اقتراح للمذاكرة التالية'),findsOneWidget);
+    expect(find.textContaining('بقي لديك 2 دروس غير مكتملة'),findsOneWidget);
+    expect(tester.takeException(),isNull);
+  });
+
   testWidgets('subject percentages render from local records',(tester) async {
     SharedPreferences.setMockInitialValues({});
     final student=StudentState(await SharedPreferences.getInstance());
