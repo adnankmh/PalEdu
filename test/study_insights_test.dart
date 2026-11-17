@@ -66,6 +66,23 @@ void main(){
     expect(stats.total,3);
   });
 
+  test('restored local progress counts each mastered lesson once',() async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs=await SharedPreferences.getInstance();
+    final student=StudentState(prefs);
+    await student.finish('l1',5,5,now:DateTime(2026,11,17));
+    await student.finish('l2',5,5,now:DateTime(2026,11,17));
+    await prefs.reload();
+    final restored=StudentState(prefs);
+    final stats=StudyInsights(student:restored,
+      lessons:[lessons[0],lessons[0],lessons[0],lessons[1]],
+      now:DateTime(2026,11,17));
+    expect(stats.total,2);
+    expect(stats.completed,2);
+    expect(stats.excellentLessons,2);
+    expect(stats.badges.firstWhere((b)=>b.id=='mastery').earned,isFalse);
+  });
+
   test('corrupt date counters ignored; delete local history',() async {
     SharedPreferences.setMockInitialValues({
       'practice_days_v1':'{"bad":12,"2026-10-20":2,"2026-02-99":3,"2026-10-18":-2}',

@@ -27,8 +27,9 @@ class StudyInsights {
     final available=lessons.toList(growable:false);
     final ids=available.map((e)=>e.id).toSet();
     final completedIds=student.completed.intersection(ids);
-    final strongScores=available.where((l)=>
-      (student.reviews[l.id]?.lastScore??0)>=80).length;
+    // A repeated catalog entry must never count as another mastered lesson.
+    final strongScores=ids.where((id)=>
+      (student.reviews[id]?.lastScore??0)>=80).length;
     final coveredSubjects=available.where((l)=>completedIds.contains(l.id))
       .map((l)=>l.subject).toSet();
     final week=List<StudyDay>.generate(7,(i){
