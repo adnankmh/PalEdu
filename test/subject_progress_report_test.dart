@@ -50,6 +50,9 @@ void main(){
   });
 
   testWidgets('overall percentage reflects actual local completion',(tester) async {
+    // Flutter widget tests disable the semantics tree unless explicitly enabled.
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     SharedPreferences.setMockInitialValues({});
     final student=StudentState(await SharedPreferences.getInstance());
     await student.finish('m1',9,10,now:DateTime(2026,11,17));
