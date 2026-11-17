@@ -4,6 +4,7 @@ import '../data/study_insights.dart';
 import '../state/student_state.dart';
 import 'design.dart';
 import 'royal_motion.dart';
+import 'subject_progress_report.dart';
 
 /// Earned local badges. No fictional streaks or arbitrary leaderboard ranks.
 class RoyalAchievementsScreen extends StatelessWidget {
@@ -134,6 +135,18 @@ class RoyalAchievementsScreen extends StatelessWidget {
                 stats.weeklyAttempts.toString(),
                 style:TextStyle(color:textColor,fontSize:12)),
             ])),
+            const SizedBox(height:20),
+            Panel(child:ListTile(
+              key:const Key('open-subject-progress-report'),
+              leading:const Icon(Icons.assessment_rounded,color:PColors.teal),
+              title:const Text('تقريري حسب المبحث',
+                style:TextStyle(fontWeight:FontWeight.w900)),
+              subtitle:const Text('الدروس المكتملة والتقدم ونتائج الإتقان'),
+              trailing:const Icon(Icons.chevron_left_rounded),
+              onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
+                builder:(_)=>SubjectProgressReport(
+                  student:student,lessons:lessons))),
+            )),
             const SizedBox(height:22),
             const RoyalSectionHeading(title:'شارات التعلّم',
               subtitle:'تُفتح تلقائياً عند تحقيق شروطها'),
