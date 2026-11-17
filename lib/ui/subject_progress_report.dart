@@ -9,6 +9,7 @@ class SubjectProgress {
   final String subject;
   final int completed,total,strong;
   double get ratio => total==0 ? 0 : completed/total;
+  int get percent => (ratio*100).round();
 }
 
 List<SubjectProgress> calculateSubjectProgress(
@@ -85,10 +86,12 @@ class SubjectProgressReport extends StatelessWidget {
                   Text(item.subject,style:const TextStyle(
                     fontSize:18,fontWeight:FontWeight.w900)),
                   const SizedBox(height:9),
-                  Text('المكتملة: ${item.completed} من ${item.total}'),
+                  Text('المكتملة: ${item.completed} من ${item.total} • ${item.percent}٪'),
                   const SizedBox(height:10),
-                  LinearProgressIndicator(value:item.ratio,minHeight:9,
-                    color:PColors.teal,backgroundColor:PColors.mint),
+                  Semantics(
+                    label:'تقدم ${item.subject}: ${item.percent} بالمئة',
+                    child:LinearProgressIndicator(value:item.ratio,minHeight:9,
+                      color:PColors.teal,backgroundColor:PColors.mint)),
                   const SizedBox(height:10),
                   Text('دروس بآخر نتيجة 80٪ فأكثر: ${item.strong}',
                     style:TextStyle(fontSize:12,
