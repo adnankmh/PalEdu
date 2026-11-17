@@ -53,6 +53,10 @@ List<SubjectProgress> calculateSubjectProgress(
    return pending.first;
  }
 
+/// Overall percentage from available local lessons; zero lessons means zero progress.
+int overallCompletionPercent(int completed,int total) =>
+    total<=0 ? 0 : (completed.clamp(0,total)*100/total).round();
+
 class SubjectProgressReport extends StatelessWidget {
   const SubjectProgressReport({
     super.key,required this.student,required this.lessons,
@@ -88,6 +92,12 @@ class SubjectProgressReport extends StatelessWidget {
                   const SizedBox(height:8),
                   Text('أنجزت $done من $total دروس متاحة',
                     style:const TextStyle(color:Colors.white)),
+                  const SizedBox(height:8),
+                  Semantics(
+                    label:'نسبة الإنجاز الإجمالية: ${overallCompletionPercent(done,total)} بالمئة',
+                    child:Text('نسبة الإنجاز الإجمالية: ${overallCompletionPercent(done,total)}٪',
+                      style:const TextStyle(color:PColors.gold,
+                        fontSize:18,fontWeight:FontWeight.w900))),
                   const SizedBox(height:12),
                   LinearProgressIndicator(
                     value:total==0?0:done/total,
