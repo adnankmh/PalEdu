@@ -87,7 +87,7 @@ void main(){
       home:Directionality(textDirection:TextDirection.rtl,
         child:SubjectProgressReport(student:student,lessons:lessons))));
     expect(find.text('اقتراح للمذاكرة التالية'),findsOneWidget);
-    expect(find.textContaining('بقي لديك 2 دروس غير مكتملة'),findsOneWidget);
+    expect(find.textContaining('عدد الدروس المتبقية: 2'),findsOneWidget);
     expect(tester.takeException(),isNull);
   });
 
