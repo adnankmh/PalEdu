@@ -32,6 +32,12 @@ void main() {
     expect(matchesResourceSearch(resource, 'رياضيات ١١'), isFalse);
   });
 
+  test('comma and semicolon keyword lists search only approved metadata', () {
+    expect(matchesResourceSearch(approved, 'العلوم، الطاقة'), isTrue);
+    expect(matchesResourceSearch(approved, 'ملزمة;الحياة'), isTrue);
+    expect(matchesResourceSearch(approved, 'العلوم،should-not-be-searched'), isFalse);
+  });
+
   test('contracted lam is indexed; missing metadata does not crash', () {
     final contractions = <String, dynamic>{
       'title': 'التدرب على الجمع',

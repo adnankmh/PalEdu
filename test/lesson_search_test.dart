@@ -31,6 +31,14 @@ void main() {
     expect(matchesLessonSearch(lesson, 'الكسور الكيمياء'), isFalse);
   });
 
+  test('comma-separated and semicolon-separated pasted keywords work offline', () {
+    expect(matchesLessonSearch(lesson, 'الكسور، الرياضيات'), isTrue);
+    expect(matchesLessonSearch(lesson, 'المقام؛ الكسور'), isTrue);
+    expect(matchesLessonSearch(lesson, 'الكسور, الكيمياء'), isFalse);
+    expect(normalizeLessonSearch('  الكسور،الرياضيات;المقام  '),
+        'الكسور الرياضيات المقام');
+  });
+
   test('empty queries match and search is case-insensitive', () {
     expect(matchesLessonSearch(lesson, '   '), isTrue);
     expect(normalizeLessonSearch('  Flutter   WEB '), 'flutter web');
