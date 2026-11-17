@@ -66,12 +66,15 @@ void main(){
     expect(stats.total,3);
   });
 
-  test('duplicate catalog IDs do not inflate mastered lesson count',() async {
+  test('restored local progress counts each mastered lesson once',() async {
     SharedPreferences.setMockInitialValues({});
-    final student=StudentState(await SharedPreferences.getInstance());
+    final prefs=await SharedPreferences.getInstance();
+    final student=StudentState(prefs);
     await student.finish('l1',5,5,now:DateTime(2026,11,17));
     await student.finish('l2',5,5,now:DateTime(2026,11,17));
-    final stats=StudyInsights(student:student,
+    await prefs.reload();
+    final restored=StudentState(prefs);
+    final stats=StudyInsights(student:restored,
       lessons:[lessons[0],lessons[0],lessons[0],lessons[1]],
       now:DateTime(2026,11,17));
     expect(stats.total,2);
