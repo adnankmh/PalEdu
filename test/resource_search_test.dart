@@ -25,6 +25,13 @@ void main() {
     expect(matchesResourceSearch(approved, 'example.org'), isFalse);
   });
 
+  test('grade numbers match across Arabic keyboards and copied text', () {
+    final resource = <String, dynamic>{'title': 'رياضيات الصف 12'};
+    expect(matchesResourceSearch(resource, '\u2067رياضيات ١٢\u2069'), isTrue);
+    expect(matchesResourceSearch(resource, 'رياضيات ۱۲'), isTrue);
+    expect(matchesResourceSearch(resource, 'رياضيات ١١'), isFalse);
+  });
+
   test('contracted lam is indexed; missing metadata does not crash', () {
     final contractions = <String, dynamic>{
       'title': 'التدرب على الجمع',

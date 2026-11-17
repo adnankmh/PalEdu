@@ -7,7 +7,7 @@ const scienceLesson = Lesson(
   grade: 7,
   track: 'عام',
   subject: 'العلوم والحياة',
-  title: 'الطاقة المُتَجَدِّدَة',
+  title: 'الطاقة المُتَجَدِّدَة ٢',
   summary: 'مقدمة عن البيئة',
   sections: ['الطاقة الشمسية', 'المياه والرياح'],
   questions: <QuizQuestion>[],
@@ -28,5 +28,11 @@ void main() {
   test('unrelated terms do not match', () {
     expect(matchesLessonSearch(scienceLesson, 'الرياضيات'), isFalse);
     expect(matchesLessonSearch(scienceLesson, 'العلوم الكيمياء'), isFalse);
+  });
+
+  test('copied direction markers and digit shapes do not hide lessons', () {
+    expect(matchesLessonSearch(scienceLesson, '\u200fالطاقة 2'), isTrue);
+    expect(matchesLessonSearch(scienceLesson, 'الطاقة ۲'), isTrue);
+    expect(matchesLessonSearch(scienceLesson, 'الطاقة 3'), isFalse);
   });
 }
