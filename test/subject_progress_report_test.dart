@@ -68,6 +68,31 @@ void main(){
     }
   });
 
+  testWidgets('aggregate mastery counts actual high-scoring local lessons',(tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final student=StudentState(await SharedPreferences.getInstance());
+    await student.finish('m1',9,10,now:DateTime(2026,11,17));
+    await student.finish('a1',3,10,now:DateTime(2026,11,17));
+    await tester.pumpWidget(MaterialApp(
+      theme:palTheme(false),
+      home:Directionality(textDirection:TextDirection.rtl,
+        child:SubjectProgressReport(student:student,lessons:lessons))));
+    expect(find.text('دروس بآخر نتيجة 80٪ فأكثر: 1 من 3'),findsOneWidget);
+    expect(find.text('نسبة الإنجاز الإجمالية: 67٪'),findsOneWidget);
+    expect(tester.takeException(),isNull);
+  });
+
+  testWidgets('aggregate mastery is zero for an empty catalog',(tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final student=StudentState(await SharedPreferences.getInstance());
+    await tester.pumpWidget(MaterialApp(
+      theme:palTheme(false),
+      home:Directionality(textDirection:TextDirection.rtl,
+        child:SubjectProgressReport(student:student,lessons:const []))));
+    expect(find.text('دروس بآخر نتيجة 80٪ فأكثر: 0 من 0'),findsOneWidget);
+    expect(tester.takeException(),isNull);
+  });
+
   test('duplicate lesson IDs do not inflate progress',() async {
     SharedPreferences.setMockInitialValues({});
     final student=StudentState(await SharedPreferences.getInstance());
