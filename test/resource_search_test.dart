@@ -47,6 +47,7 @@ void main() {
     expect(matchesResourceSearch(<String, dynamic>{}, 'الاعداد'), isFalse);
     expect(matchesResourceSearch(<String, dynamic>{}, ''), isTrue);
   });
+
   test('malformed nested metadata never exposes private URL tokens', () {
     final malformed = <String, dynamic>{
       'title': <String, dynamic>{
@@ -62,6 +63,9 @@ void main() {
     expect(matchesResourceSearch(malformed, 'الطاقة'), isFalse);
     expect(matchesResourceSearch(malformed, 'العلوم'), isFalse);
     expect(matchesResourceSearch(malformed, ''), isTrue);
+    expect(resourceText(malformed['title'], fallback: 'مادة تعليمية'),
+        'مادة تعليمية');
+    expect(resourceText(malformed['subject']), isEmpty);
+    expect(resourceText(approved['title']), approved['title']);
   });
-
 }

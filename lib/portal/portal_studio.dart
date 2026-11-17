@@ -415,7 +415,7 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
     try {
       final link=await PortalService.instance.accessUrl(item);
       if(!mounted)return;
-      final name=item['title']?.toString()??'مادة تعليمية';
+      final name=resourceText(item['title'],fallback:'مادة تعليمية');
       final id=item['resource_id']?.toString()??link;
       final format=ResourceMedia.forResource(item);
       if(format==null){
@@ -502,8 +502,8 @@ class _PublishedLibraryState extends State<PublishedLibrary> {
                   item['kind']=='lesson'?Icons.school_outlined:
                   Icons.menu_book_rounded,
                   color:PColors.teal,size:34),
-                title:Text(item['title']?.toString()??''),
-                subtitle:Text((item['subject']?.toString()??'')+
+                title:Text(resourceText(item['title'],fallback:'مادة تعليمية')),
+                subtitle:Text(resourceText(item['subject'])+
                   (item['semester']==null?'':' • الفصل '+item['semester'].toString())+
                   ' • '+ResourceMedia.description(item['kind']?.toString()??'')),
                 trailing:IconButton(
