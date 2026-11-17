@@ -61,7 +61,7 @@ void main(){
       home:Directionality(textDirection:TextDirection.rtl,
         child:SubjectProgressReport(student:student,lessons:lessons))));
     expect(find.text('نسبة الإنجاز الإجمالية: 33٪'),findsOneWidget);
-    expect(find.bySemanticsLabel('نسبة الإنجاز الإجمالية: 33 بالمئة'),findsOneWidget);
+    // Assert the explicit accessibility label; Flutter may merge its node.\n    expect(find.byWidgetPredicate((widget) => widget is Semantics &&\n      widget.properties.label == 'نسبة الإنجاز الإجمالية: 33 بالمئة'),\n      findsOneWidget);
     expect(tester.takeException(),isNull);
   });
 
