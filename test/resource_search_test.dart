@@ -68,4 +68,29 @@ void main() {
     expect(resourceText(malformed['subject']), isEmpty);
     expect(resourceText(approved['title']), approved['title']);
   });
+  test('valid title remains searchable when subject is malformed', () {
+    final resource = <String, dynamic>{
+      'title': 'دليل الرياضيات للصف ١٢',
+      'subject': <String, dynamic>{
+        'private': 'https://example.org/signed?token=hidden-subject',
+      },
+    };
+    expect(matchesResourceSearch(resource, 'رياضيات 12'), isTrue);
+    expect(matchesResourceSearch(resource, 'hidden-subject'), isFalse);
+    expect(matchesResourceSearch(resource, 'رياضيات hidden-subject'), isFalse);
+    expect(resourceText(resource['subject']), isEmpty);
+  });
+
+  test('valid subject remains searchable when title is malformed', () {
+    final resource = <String, dynamic>{
+      'title': <String>['hidden-title', 'https://example.org/private'],
+      'subject': 'اللغة العربية',
+    };
+    expect(matchesResourceSearch(resource, 'اللغه العربيه'), isTrue);
+    expect(matchesResourceSearch(resource, 'hidden-title'), isFalse);
+    expect(matchesResourceSearch(resource, 'العربية hidden-title'), isFalse);
+    expect(resourceText(resource['title'], fallback: 'مادة تعليمية'),
+        'مادة تعليمية');
+  });
+
 }
