@@ -37,6 +37,22 @@ List<SubjectProgress> calculateSubjectProgress(
   return result;
 }
 
+/// Suggests the least-completed subject with unfinished lessons.
+ /// This is a local study hint, not a grade prediction.
+ SubjectProgress? nextSubjectToStudy(Iterable<SubjectProgress> subjects) {
+   final pending=subjects.where((subject)=>subject.completed<subject.total).toList();
+   if(pending.isEmpty) return null;
+   pending.sort((a,b) {
+     final ratioOrder=a.ratio.compareTo(b.ratio);
+     if(ratioOrder!=0) return ratioOrder;
+     final remainingA=a.total-a.completed;
+     final remainingB=b.total-b.completed;
+     final remainingOrder=remainingB.compareTo(remainingA);
+     return remainingOrder!=0?remainingOrder:a.subject.compareTo(b.subject);
+   });
+   return pending.first;
+ }
+
 class SubjectProgressReport extends StatelessWidget {
   const SubjectProgressReport({
     super.key,required this.student,required this.lessons,
@@ -49,6 +65,7 @@ class SubjectProgressReport extends StatelessWidget {
     final groups=calculateSubjectProgress(student,lessons);
     final total=groups.fold<int>(0,(sum,e)=>sum+e.total);
     final done=groups.fold<int>(0,(sum,e)=>sum+e.completed);
+    final suggested=nextSubjectToStudy(groups);
     return Scaffold(
       appBar:AppBar(title:const Text('تقرير تقدمي حسب المبحث')),
       body:Center(child:ConstrainedBox(
@@ -78,6 +95,31 @@ class SubjectProgressReport extends StatelessWidget {
                     backgroundColor:Colors.white24),
                 ])),
             const SizedBox(height:18),
+            if(suggested!=null) ...[
+              Panel(child:Column(
+                crossAxisAlignment:CrossAxisAlignment.start,
+                children:[
+                  const Row(children:[
+                    Icon(Icons.lightbulb_outline_rounded,color:PColors.teal),
+                    SizedBox(width:9),
+                    Expanded(child:Text('اقتراح للمذاكرة التالية',
+                      style:TextStyle(fontWeight:FontWeight.w900,fontSize:16))),
+                  ]),
+                  const SizedBox(height:9),
+                  Text('ابدأ بمبحث ${suggested.subject}؛ بقي لديك '
+                    '${suggested.total-suggested.completed} دروس غير مكتملة.',
+                    style:const TextStyle(fontSize:14)),
+                  const SizedBox(height:7),
+                  const Text('الاقتراح يعتمد فقط على نسبة الدروس المكتملة '
+                    'ولا يقيّم مستواك الدراسي.',
+                    style:TextStyle(fontSize:12)),
+                ])),
+              const SizedBox(height:14),
+            ] else if(groups.isNotEmpty) ...[
+              const Panel(child:Text('أحسنت! أكملت جميع الدروس المتاحة '
+                'في مباحثك الحالية.')),
+              const SizedBox(height:14),
+            ],
             if(groups.isEmpty)
               const Panel(child:Text('لا توجد دروس متاحة لعرض التقرير.')),
             for(final item in groups) ...[
