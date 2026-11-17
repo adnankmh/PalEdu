@@ -69,6 +69,7 @@ class SubjectProgressReport extends StatelessWidget {
     final groups=calculateSubjectProgress(student,lessons);
     final total=groups.fold<int>(0,(sum,e)=>sum+e.total);
     final done=groups.fold<int>(0,(sum,e)=>sum+e.completed);
+    final mastered=groups.fold<int>(0,(sum,e)=>sum+e.strong);
     final completionPercent=overallCompletionPercent(done,total);
     final suggested=nextSubjectToStudy(groups);
     return Scaffold(
@@ -100,11 +101,16 @@ class SubjectProgressReport extends StatelessWidget {
                     child:Text('نسبة الإنجاز الإجمالية: $completionPercent٪',
                       style:const TextStyle(color:PColors.gold,
                         fontSize:18,fontWeight:FontWeight.w900))),
+                  const SizedBox(height:8),
+                  Text('دروس بآخر نتيجة 80٪ فأكثر: $mastered من $total',
+                    style:const TextStyle(color:Colors.white)),
                   const SizedBox(height:12),
-                  LinearProgressIndicator(
+                  Semantics(
+                    label:'تقدم الدروس الإجمالي: $completionPercent بالمئة',
+                    child:LinearProgressIndicator(
                     value:total==0?0:done/total,
                     minHeight:10,color:PColors.gold,
-                    backgroundColor:Colors.white24),
+                    backgroundColor:Colors.white24)),
                 ])),
             const SizedBox(height:18),
             if(suggested!=null) ...[
