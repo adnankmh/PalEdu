@@ -69,6 +69,7 @@ class SubjectProgressReport extends StatelessWidget {
     final groups=calculateSubjectProgress(student,lessons);
     final total=groups.fold<int>(0,(sum,e)=>sum+e.total);
     final done=groups.fold<int>(0,(sum,e)=>sum+e.completed);
+    final completionPercent=overallCompletionPercent(done,total);
     final suggested=nextSubjectToStudy(groups);
     return Scaffold(
       appBar:AppBar(title:const Text('تقرير تقدمي حسب المبحث')),
@@ -94,8 +95,9 @@ class SubjectProgressReport extends StatelessWidget {
                     style:const TextStyle(color:Colors.white)),
                   const SizedBox(height:8),
                   Semantics(
-                    label:'نسبة الإنجاز الإجمالية: ${overallCompletionPercent(done,total)} بالمئة',
-                    child:Text('نسبة الإنجاز الإجمالية: ${overallCompletionPercent(done,total)}٪',
+                    excludeSemantics:true,
+                    label:'نسبة الإنجاز الإجمالية: $completionPercent بالمئة',
+                    child:Text('نسبة الإنجاز الإجمالية: $completionPercent٪',
                       style:const TextStyle(color:PColors.gold,
                         fontSize:18,fontWeight:FontWeight.w900))),
                   const SizedBox(height:12),

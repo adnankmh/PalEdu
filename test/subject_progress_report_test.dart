@@ -50,19 +50,22 @@ void main(){
   });
 
   testWidgets('overall percentage reflects actual local completion',(tester) async {
-    // Flutter widget tests disable the semantics tree unless explicitly enabled.
-    final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-    SharedPreferences.setMockInitialValues({});
-    final student=StudentState(await SharedPreferences.getInstance());
-    await student.finish('m1',9,10,now:DateTime(2026,11,17));
-    await tester.pumpWidget(MaterialApp(
-      theme:palTheme(false),
-      home:Directionality(textDirection:TextDirection.rtl,
-        child:SubjectProgressReport(student:student,lessons:lessons))));
-    expect(find.text('نسبة الإنجاز الإجمالية: 33٪'),findsOneWidget);
-    // Assert the explicit accessibility label; Flutter may merge its node.\n    expect(find.byWidgetPredicate((widget) => widget is Semantics &&\n      widget.properties.label == 'نسبة الإنجاز الإجمالية: 33 بالمئة'),\n      findsOneWidget);
-    expect(tester.takeException(),isNull);
+    final semantics=tester.ensureSemantics();
+    try {
+      SharedPreferences.setMockInitialValues({});
+      final student=StudentState(await SharedPreferences.getInstance());
+      await student.finish('m1',9,10,now:DateTime(2026,11,17));
+      await tester.pumpWidget(MaterialApp(
+        theme:palTheme(false),
+        home:Directionality(textDirection:TextDirection.rtl,
+          child:SubjectProgressReport(student:student,lessons:lessons))));
+      expect(find.text('نسبة الإنجاز الإجمالية: 33٪'),findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('نسبة الإنجاز الإجمالية: 33 بالمئة')),
+        findsOneWidget);
+      expect(tester.takeException(),isNull);
+    } finally {
+      semantics.dispose();
+    }
   });
 
   test('duplicate lesson IDs do not inflate progress',() async {
