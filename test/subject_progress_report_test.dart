@@ -40,6 +40,28 @@ void main(){
       .every((e)=>e.completed==0 && e.strong==0),isTrue);
   });
 
+  test('overall completion percentage handles empty and bounded values',() {
+    expect(overallCompletionPercent(0,0),0);
+    expect(overallCompletionPercent(1,3),33);
+    expect(overallCompletionPercent(2,3),67);
+    expect(overallCompletionPercent(3,3),100);
+    expect(overallCompletionPercent(5,3),100);
+    expect(overallCompletionPercent(-1,3),0);
+  });
+
+  testWidgets('overall percentage reflects actual local completion',(tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final student=StudentState(await SharedPreferences.getInstance());
+    await student.finish('m1',9,10,now:DateTime(2026,11,17));
+    await tester.pumpWidget(MaterialApp(
+      theme:palTheme(false),
+      home:Directionality(textDirection:TextDirection.rtl,
+        child:SubjectProgressReport(student:student,lessons:lessons))));
+    expect(find.text('نسبة الإنجاز الإجمالية: 33٪'),findsOneWidget);
+    expect(find.bySemanticsLabel('نسبة الإنجاز الإجمالية: 33 بالمئة'),findsOneWidget);
+    expect(tester.takeException(),isNull);
+  });
+
   test('duplicate lesson IDs do not inflate progress',() async {
     SharedPreferences.setMockInitialValues({});
     final student=StudentState(await SharedPreferences.getInstance());
