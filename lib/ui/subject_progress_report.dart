@@ -106,8 +106,8 @@ class SubjectProgressReport extends StatelessWidget {
                       style:TextStyle(fontWeight:FontWeight.w900,fontSize:16))),
                   ]),
                   const SizedBox(height:9),
-                  Text('ابدأ بمبحث ${suggested.subject}؛ بقي لديك '
-                    '${suggested.total-suggested.completed} دروس غير مكتملة.',
+                  Text('ابدأ بمبحث ${suggested.subject}؛ عدد الدروس المتبقية: '
+                    '${suggested.total-suggested.completed}.',
                     style:const TextStyle(fontSize:14)),
                   const SizedBox(height:7),
                   const Text('الاقتراح يعتمد فقط على نسبة الدروس المكتملة '
