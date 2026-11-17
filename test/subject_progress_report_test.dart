@@ -30,6 +30,8 @@ void main(){
     expect(math.completed,1);
     expect(math.strong,1);
     expect(math.ratio,0.5);
+    expect(math.percent,50);
+    expect(arabic.percent,100);
     expect(arabic.completed,1);
     expect(arabic.strong,0);
     expect(calculateSubjectProgress(student,[]),isEmpty);
@@ -46,6 +48,20 @@ void main(){
     expect(report.single.total,1);
     expect(report.single.completed,1);
     expect(report.single.strong,1);
+    expect(report.single.percent,100);
+  });
+
+  testWidgets('subject percentages render from local records',(tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final student=StudentState(await SharedPreferences.getInstance());
+    await student.finish('m1',9,10,now:DateTime(2026,11,17));
+    await tester.pumpWidget(MaterialApp(
+      theme:palTheme(false),
+      home:Directionality(textDirection:TextDirection.rtl,
+        child:SubjectProgressReport(student:student,lessons:lessons))));
+    expect(find.text('المكتملة: 1 من 2 • 50٪'),findsOneWidget);
+    expect(find.text('المكتملة: 0 من 1 • 0٪'),findsOneWidget);
+    expect(tester.takeException(),isNull);
   });
 
   testWidgets('RTL report renders with zero lessons on narrow screens',(tester) async {
