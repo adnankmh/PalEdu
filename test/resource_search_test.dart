@@ -122,6 +122,19 @@ void main() {
         'مادة تعليمية');
   });
 
+  test('malformed subject objects cannot be stringified or indexed', () {
+    final resource = <String, dynamic>{
+      'title': 'دليل العلوم للصف التاسع',
+      'subject': _ThrowingPrivateMetadata(),
+      'url': 'https://example.org/private?token=hidden-media-token',
+    };
+    expect(matchesResourceSearch(resource, 'العلوم التاسع'), isTrue);
+    expect(matchesResourceSearch(resource, 'private-object-token'), isFalse);
+    expect(matchesResourceSearch(resource, 'hidden-media-token'), isFalse);
+    expect(resourceText(resource['subject'], fallback: 'مبحث غير معروف'),
+        'مبحث غير معروف');
+  });
+
   test('non-string scalar metadata cannot leak into resource search', () {
     for (final invalid in <Object?>[null, 12, false, true, 3.14]) {
       final resource = <String, dynamic>{
