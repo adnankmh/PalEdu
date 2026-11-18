@@ -111,6 +111,17 @@ void main() {
     }
   });
 
+  test('malformed objects are never stringified while indexing', () {
+    final resource = <String, dynamic>{
+      'title': _ThrowingPrivateMetadata(),
+      'subject': 'العلوم والحياة',
+    };
+    expect(matchesResourceSearch(resource, 'العلوم'), isTrue);
+    expect(matchesResourceSearch(resource, 'private-object-token'), isFalse);
+    expect(resourceText(resource['title'], fallback: 'مادة تعليمية'),
+        'مادة تعليمية');
+  });
+
   test('non-string scalar metadata cannot leak into resource search', () {
     for (final invalid in <Object?>[null, 12, false, true, 3.14]) {
       final resource = <String, dynamic>{
@@ -126,4 +137,9 @@ void main() {
     }
   });
 
+}
+
+class _ThrowingPrivateMetadata {
+  @override
+  String toString() => throw StateError('private-object-token must not be read');
 }
