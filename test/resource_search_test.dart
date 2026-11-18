@@ -93,4 +93,22 @@ void main() {
         'مادة تعليمية');
   });
 
+  test('resource type and unrelated metadata cannot influence search', () {
+    for (final type in <String>['book', 'worksheet', 'video']) {
+      final resource = <String, dynamic>{
+        'type': type,
+        'title': 'مراجعة الكسور',
+        'subject': 'الرياضيات',
+        'description': 'private-description-marker',
+        'storage_path': 'private-storage-marker',
+        'signed_url': 'https://example.org/?token=private-token-marker',
+      };
+      expect(matchesResourceSearch(resource, 'الكسور الرياضيات'), isTrue);
+      expect(matchesResourceSearch(resource, 'private-description-marker'), isFalse);
+      expect(matchesResourceSearch(resource, 'private-storage-marker'), isFalse);
+      expect(matchesResourceSearch(resource, 'private-token-marker'), isFalse);
+      expect(matchesResourceSearch(resource, 'الكسور private-token-marker'), isFalse);
+    }
+  });
+
 }
