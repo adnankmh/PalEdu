@@ -1,0 +1,18 @@
+name: PalEdu - Backend Schema Guardrails
+on:
+  push:
+    paths:
+      - "supabase/**"
+      - "scripts/check_backend_schema.py"
+      - ".github/workflows/backend-guardrails.yml"
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check RLS rules are declared
+        run: python3 scripts/check_backend_schema.py
