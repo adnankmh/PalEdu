@@ -111,4 +111,19 @@ void main() {
     }
   });
 
+  test('non-string scalar metadata cannot leak into resource search', () {
+    for (final invalid in <Object?>[null, 12, false, true, 3.14]) {
+      final resource = <String, dynamic>{
+        'title': invalid,
+        'subject': 'الرياضيات',
+        'signed_url': 'https://example.org/?token=hidden-token',
+      };
+      expect(matchesResourceSearch(resource, 'الرياضيات'), isTrue);
+      expect(matchesResourceSearch(resource, '12'), isFalse);
+      expect(matchesResourceSearch(resource, 'true'), isFalse);
+      expect(matchesResourceSearch(resource, 'hidden-token'), isFalse);
+      expect(resourceText(invalid, fallback: 'مادة تعليمية'), 'مادة تعليمية');
+    }
+  });
+
 }
