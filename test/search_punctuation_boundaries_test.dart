@@ -44,4 +44,16 @@ void main() {
     expect(matchesResourceSearch(resource, 'العلوم:للأعداد'), isFalse);
   });
 
+  test('Arabic comma and semicolon separate words without exposing private metadata', () {
+    final resource = <String, dynamic>{
+      'title': 'مراجعة الطاقة',
+      'subject': 'العلوم والحياة',
+      'description': 'private-marker-xyz',
+      'url': 'https://example.org/private?token=private-marker-xyz',
+    };
+    expect(matchesResourceSearch(resource, 'العلوم،الطاقة؛'), isTrue);
+    expect(matchesResourceSearch(resource, 'العلوم;الطاقة,'), isTrue);
+    expect(matchesResourceSearch(resource, 'العلوم،private-marker-xyz'), isFalse);
+  });
+
 }
