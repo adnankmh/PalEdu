@@ -20,9 +20,9 @@ String normalizeLessonSearch(String input) => input
     // Restore the definite article for queries matching "الأعداد".
     .replaceAllMapped(
         RegExp(r'(^|\s)لل(?=\S)'), (match) => '${match.group(1)}لال')
-    // Pasted lists of keywords use Arabic or Latin comma/semicolon separators.
-    // Treat them as word boundaries rather than joining unrelated words.
-    .replaceAll(RegExp(r'[،؛,;]+'), ' ')
+    // Treat common Arabic/Latin punctuation as word boundaries when learners
+    // paste phrases from worksheets (e.g. 'العلوم: الطاقة؟').
+    .replaceAll(RegExp(r'[،؛,;:：؟?]+'), ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
