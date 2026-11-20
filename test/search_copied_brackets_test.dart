@@ -13,6 +13,9 @@ void main() {
     expect(matchesResourceSearch(resource, 'الرياضيات/الجبر'), isTrue);
     expect(matchesResourceSearch(resource, 'الرياضيات\\الجبر'), isTrue);
     expect(matchesResourceSearch(resource, 'الرياضيات（الجبر）'), isTrue);
+    expect(matchesResourceSearch(resource, 'الرياضيات{الجبر}'), isTrue);
+    expect(matchesResourceSearch(resource, 'الرياضيات|الجبر'), isTrue);
+    expect(matchesResourceSearch(resource, 'الرياضيات|العلوم'), isFalse);
     expect(matchesResourceSearch(resource, 'العلوم/الجبر'), isFalse);
   });
 
