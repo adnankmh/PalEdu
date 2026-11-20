@@ -34,4 +34,14 @@ void main() {
     expect(matchesResourceSearch(resource, 'الصف ٤:\u200fالوحدة ۲؟'), isFalse);
     expect(matchesResourceSearch(resource, 'الوحدة ۲؟never-index-me'), isFalse);
   });
+  test('contracted Arabic article after punctuation matches a separate term', () {
+    final resource = <String, dynamic>{
+      'title': 'مدخل للأعداد',
+      'subject': 'الرياضيات',
+    };
+    expect(normalizeLessonSearch('الرياضيات:للأعداد'), 'الرياضيات لالاعداد');
+    expect(matchesResourceSearch(resource, 'الرياضيات:للأعداد'), isTrue);
+    expect(matchesResourceSearch(resource, 'العلوم:للأعداد'), isFalse);
+  });
+
 }
