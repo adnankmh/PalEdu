@@ -23,4 +23,15 @@ void main() {
     expect(matchesResourceSearch(resource, 'الرياضيات：الجبر'), isTrue);
     expect(matchesResourceSearch(resource, 'الرياضيات:secret-colon'), isFalse);
   });
+  test('RTL marks and mixed Arabic/Persian digits survive pasted queries', () {
+    final resource = <String, dynamic>{
+      'title': 'الوحدة 2: الطاقة',
+      'subject': 'الصف 3 العلوم',
+      'url': 'https://example.org/private?token=never-index-me',
+    };
+    expect(matchesResourceSearch(resource, 'الصف ٣:\u200fالوحدة ۲؟'), isTrue);
+    expect(matchesResourceSearch(resource, 'الصف ٤:\u200fالوحدة ۲؟'), isFalse);
+    expect(matchesResourceSearch(resource, 'الوحدة ۲؟never-index-me'), isFalse);
+  });
+
 }
