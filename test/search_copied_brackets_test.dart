@@ -31,4 +31,16 @@ void main() {
     expect(matchesResourceSearch(resource, 'الرياضيات/never-search-this'),
         isFalse);
   });
+  test('copied RTL marks and Arabic-Indic digits remain searchable', () {
+    const resource = <String, dynamic>{
+      'title': 'تمارين الجبر 12',
+      'subject': 'الرياضيات',
+      'description': 'private-instructor-notes',
+      'url': 'https://example.org/private?token=secret-12',
+    };
+    expect(matchesResourceSearch(resource, 'الرياضيات(\\u200Fالجبر/١٢)'), isTrue);
+    expect(matchesResourceSearch(resource, 'الرياضيات{الجبر|۱۲}'), isTrue);
+    expect(matchesResourceSearch(resource, 'الرياضيات(private-instructor-notes)'), isFalse);
+    expect(matchesResourceSearch(resource, 'الرياضيات{secret-12}'), isFalse);
+  });
 }
