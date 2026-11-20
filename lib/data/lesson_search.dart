@@ -16,13 +16,12 @@ String normalizeLessonSearch(String input) => input
       final zero = digit >= 0x06F0 ? 0x06F0 : 0x0660;
       return String.fromCharCode(0x30 + digit - zero);
     })
+    // Split pasted worksheet punctuation before expanding contracted articles,
+    // so a term after ':' or '؟' is recognized at a word boundary.
+    .replaceAll(RegExp(r'[،؛,;:：؟?]+'), ' ')
     // Arabic "ل" + "ال" contracts to "لل" (e.g. "للأعداد").
-    // Restore the definite article for queries matching "الأعداد".
     .replaceAllMapped(
         RegExp(r'(^|\s)لل(?=\S)'), (match) => '${match.group(1)}لال')
-    // Treat common Arabic/Latin punctuation as word boundaries when learners
-    // paste phrases from worksheets (e.g. 'العلوم: الطاقة؟').
-    .replaceAll(RegExp(r'[،؛,;:：؟?]+'), ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
