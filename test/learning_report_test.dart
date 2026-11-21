@@ -112,4 +112,34 @@ void main() {
     );
   });
 
+  test('empty breakdown has no invented lesson rows', () {
+    final byLesson = buildLessonBreakdown(const <LearningAttempt>[]);
+    expect(byLesson, isEmpty);
+    expect(() => byLesson['missing'] = const LearningReport(
+      attempts: 1,
+      lessonsPracticed: 1,
+      correctAnswers: 1,
+      totalQuestions: 1,
+    ), throwsUnsupportedError);
+  });
+
+  test('per-lesson reports remain stable after input list changes', () {
+    final attempts = <LearningAttempt>[
+      const LearningAttempt(
+        lessonId: 'رياضيات-١',
+        correctAnswers: 1,
+        totalQuestions: 2,
+      ),
+    ];
+    final byLesson = buildLessonBreakdown(attempts);
+    attempts.add(const LearningAttempt(
+      lessonId: 'رياضيات-١',
+      correctAnswers: 2,
+      totalQuestions: 2,
+    ));
+    expect(byLesson['رياضيات-١']!.attempts, 1);
+    expect(byLesson['رياضيات-١']!.totalQuestions, 2);
+    expect(byLesson['رياضيات-١']!.accuracyPercent, 50);
+  });
+
 }
