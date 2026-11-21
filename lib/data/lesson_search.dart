@@ -18,7 +18,7 @@ String normalizeLessonSearch(String input) => input
     })
     // Split pasted worksheet punctuation before expanding contracted articles,
     // so a term after ':' or '؟' is recognized at a word boundary.
-    .replaceAll(RegExp(r'[،؛,;:：؟?]+'), ' ')
+    .replaceAll(RegExp(r'[،؛,;:：؟?()（）\[\]{}\/\\|]+'), ' ')
     // Arabic "ل" + "ال" contracts to "لل" (e.g. "للأعداد").
     .replaceAllMapped(
         RegExp(r'(^|\s)لل(?=\S)'), (match) => '${match.group(1)}لال')
