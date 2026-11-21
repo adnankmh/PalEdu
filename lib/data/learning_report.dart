@@ -61,15 +61,29 @@ LearningReport buildLearningReport(Iterable<LearningAttempt> attempts) {
 Map<String, LearningReport> buildLessonBreakdown(
   Iterable<LearningAttempt> attempts,
 ) {
-  final grouped = <String, List<LearningAttempt>>{};
+  final counts = <String, int>{};
+  final correct = <String, int>{};
+  final totals = <String, int>{};
   for (final attempt in attempts) {
-    // Apply the same strict validation as the aggregate report.
-    buildLearningReport([attempt]);
+    // Validate before changing any per-lesson totals.
+    if (attempt.lessonId.trim().isEmpty ||
+        attempt.totalQuestions <= 0 ||
+        attempt.correctAnswers < 0 ||
+        attempt.correctAnswers > attempt.totalQuestions) {
+      throw const FormatException('Invalid learning attempt');
+    }
     final id = attempt.lessonId.trim();
-    grouped.putIfAbsent(id, () => <LearningAttempt>[]).add(attempt);
+    counts[id] = (counts[id] ?? 0) + 1;
+    correct[id] = (correct[id] ?? 0) + attempt.correctAnswers;
+    totals[id] = (totals[id] ?? 0) + attempt.totalQuestions;
   }
   return Map<String, LearningReport>.unmodifiable({
-    for (final entry in grouped.entries)
-      entry.key: buildLearningReport(entry.value),
+    for (final id in counts.keys)
+      id: LearningReport(
+        attempts: counts[id]!,
+        lessonsPracticed: 1,
+        correctAnswers: correct[id]!,
+        totalQuestions: totals[id]!,
+      ),
   });
 }
