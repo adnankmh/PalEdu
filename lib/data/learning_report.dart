@@ -93,10 +93,12 @@ Map<String, LearningReport> buildLessonBreakdown(
 /// Ties preserve the original order in [buildLessonBreakdown].
 /// [limit] must be non-negative; zero returns an empty, immutable list.
 /// [minimumAttempts] excludes lessons with too little practice evidence.
+/// [maximumAccuracyPercent] excludes mastered lessons above a chosen threshold.
 List<String> lessonsForRevision(
   Map<String, LearningReport> breakdown, {
   int limit = 3,
   int minimumAttempts = 1,
+  double maximumAccuracyPercent = 100,
 }) {
   if (limit < 0) {
     throw const FormatException('Invalid revision limit');
@@ -104,8 +106,16 @@ List<String> lessonsForRevision(
   if (minimumAttempts < 1) {
     throw const FormatException('Invalid minimum attempts');
   }
+  if (!maximumAccuracyPercent.isFinite ||
+      maximumAccuracyPercent < 0 ||
+      maximumAccuracyPercent > 100) {
+    throw const FormatException('Invalid maximum accuracy');
+  }
   final entries = breakdown.entries
-      .where((entry) => entry.value.attempts >= minimumAttempts)
+      .where((entry) =>
+          entry.value.attempts >= minimumAttempts &&
+          entry.value.accuracyPercent != null &&
+          entry.value.accuracyPercent! <= maximumAccuracyPercent)
       .toList();
   // Dart's List.sort is not guaranteed stable; retain the source position.
   final positions = <String, int>{
