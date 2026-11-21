@@ -190,4 +190,28 @@ void main() {
     expect(byLesson['علوم-٢']!.accuracyPercent, 0);
   });
 
+  test('many local attempts reconcile without rounding or duplicate lessons', () {
+    final attempts = List<LearningAttempt>.generate(
+      240,
+      (index) => LearningAttempt(
+        lessonId: index.isEven ? ' رياضيات-١ ' : 'علوم-٢',
+        correctAnswers: index % 5,
+        totalQuestions: 5,
+      ),
+    );
+    final overall = buildLearningReport(attempts);
+    final byLesson = buildLessonBreakdown(attempts);
+    expect(overall.attempts, 240);
+    expect(overall.lessonsPracticed, 2);
+    expect(overall.totalQuestions, 1200);
+    expect(overall.correctAnswers, 480);
+    expect(overall.accuracyPercent, 40);
+    expect(byLesson['رياضيات-١']!.attempts, 120);
+    expect(byLesson['علوم-٢']!.attempts, 120);
+    expect(byLesson.values.fold<int>(0, (sum, row) => sum + row.correctAnswers),
+        overall.correctAnswers);
+    expect(byLesson.values.fold<int>(0, (sum, row) => sum + row.totalQuestions),
+        overall.totalQuestions);
+  });
+
 }
