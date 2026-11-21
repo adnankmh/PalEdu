@@ -45,4 +45,17 @@ void main() {
     expect(matchesResourceSearch(resource, 'الرياضيات(private-instructor-notes)'), isFalse);
     expect(matchesResourceSearch(resource, 'الرياضيات{secret-12}'), isFalse);
   });
+  test('nested mixed worksheet delimiters preserve cross-field AND matching', () {
+    const resource = <String, dynamic>{
+      'title': 'تمارين الجبر 12',
+      'subject': 'الرياضيات',
+      'description': 'teacher-only-geometry',
+      'url': 'https://example.org/private?token=geometry-12',
+    };
+    expect(matchesResourceSearch(resource, '（الرياضيات）(الجبر/١٢)'), isTrue);
+    expect(matchesResourceSearch(resource, '{١٢|الجبر}[الرياضيات]'), isTrue);
+    expect(matchesResourceSearch(resource, '{١٢|الهندسة}[الرياضيات]'), isFalse);
+    expect(matchesResourceSearch(resource, '(teacher-only-geometry)/الجبر'), isFalse);
+  });
+
 }
