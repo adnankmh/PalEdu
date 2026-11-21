@@ -230,4 +230,24 @@ void main() {
     expect(lessonsForRevision(const {}), isEmpty);
   });
 
+  test('revision suggestions require configurable practice evidence', () {
+    final breakdown = buildLessonBreakdown(const [
+      LearningAttempt(lessonId: 'علوم', correctAnswers: 0, totalQuestions: 1),
+      LearningAttempt(lessonId: 'رياضيات', correctAnswers: 1, totalQuestions: 4),
+      LearningAttempt(lessonId: 'رياضيات', correctAnswers: 1, totalQuestions: 4),
+      LearningAttempt(lessonId: 'تاريخ', correctAnswers: 0, totalQuestions: 2),
+      LearningAttempt(lessonId: 'تاريخ', correctAnswers: 1, totalQuestions: 2),
+    ]);
+    expect(lessonsForRevision(breakdown), ['علوم', 'رياضيات', 'تاريخ']);
+    expect(lessonsForRevision(breakdown, minimumAttempts: 2),
+        ['رياضيات', 'تاريخ']);
+    expect(lessonsForRevision(breakdown, minimumAttempts: 3), isEmpty);
+    expect(lessonsForRevision(breakdown, minimumAttempts: 2, limit: 1),
+        ['رياضيات']);
+    expect(() => lessonsForRevision(breakdown, minimumAttempts: 0),
+        throwsFormatException);
+    expect(() => lessonsForRevision(breakdown, minimumAttempts: -1),
+        throwsFormatException);
+  });
+
 }
