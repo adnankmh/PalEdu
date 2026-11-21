@@ -214,4 +214,20 @@ void main() {
         overall.totalQuestions);
   });
 
+  test('revision ranking uses weighted accuracy and stable Arabic ties', () {
+    final breakdown = buildLessonBreakdown(const [
+      LearningAttempt(lessonId: 'رياضيات', correctAnswers: 1, totalQuestions: 2),
+      LearningAttempt(lessonId: 'علوم', correctAnswers: 0, totalQuestions: 5),
+      LearningAttempt(lessonId: 'تاريخ', correctAnswers: 1, totalQuestions: 2),
+      LearningAttempt(lessonId: 'رياضيات', correctAnswers: 0, totalQuestions: 8),
+    ]);
+    final ranked = lessonsForRevision(breakdown);
+    expect(ranked, ['علوم', 'رياضيات', 'تاريخ']);
+    expect(lessonsForRevision(breakdown, limit: 1), ['علوم']);
+    expect(lessonsForRevision(breakdown, limit: 0), isEmpty);
+    expect(() => ranked.add('جغرافيا'), throwsUnsupportedError);
+    expect(() => lessonsForRevision(breakdown, limit: -1), throwsFormatException);
+    expect(lessonsForRevision(const {}), isEmpty);
+  });
+
 }
