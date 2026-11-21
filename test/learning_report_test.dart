@@ -22,6 +22,19 @@ void main() {
     expect(report.accuracyPercent, 80);
   });
 
+  test('surrounding whitespace does not double count the same lesson', () {
+    final report = buildLearningReport(const [
+      LearningAttempt(lessonId: ' math-1 ', correctAnswers: 1, totalQuestions: 2),
+      LearningAttempt(lessonId: 'math-1', correctAnswers: 2, totalQuestions: 2),
+      LearningAttempt(lessonId: ' science-1 ', correctAnswers: 1, totalQuestions: 1),
+    ]);
+    expect(report.attempts, 3);
+    expect(report.lessonsPracticed, 2);
+    expect(report.correctAnswers, 4);
+    expect(report.totalQuestions, 5);
+    expect(report.accuracyPercent, 80);
+  });
+
   test('zero and full scores remain valid attempts', () {
     final report = buildLearningReport(const [
       LearningAttempt(lessonId: 'math-1', correctAnswers: 0, totalQuestions: 3),
