@@ -88,4 +88,28 @@ void main() {
     expect(report.accuracyPercent, closeTo(100 * 5 / 7, 0.000001));
   });
 
+  test('per-lesson breakdown counts repeated attempts and weighted accuracy', () {
+    final byLesson = buildLessonBreakdown(const [
+      LearningAttempt(lessonId: ' رياضيات-١ ', correctAnswers: 1, totalQuestions: 2),
+      LearningAttempt(lessonId: 'رياضيات-١', correctAnswers: 3, totalQuestions: 3),
+      LearningAttempt(lessonId: 'علوم-٢', correctAnswers: 0, totalQuestions: 5),
+    ]);
+    expect(byLesson.keys, containsAll(['رياضيات-١', 'علوم-٢']));
+    expect(byLesson.length, 2);
+    expect(byLesson['رياضيات-١']!.attempts, 2);
+    expect(byLesson['رياضيات-١']!.accuracyPercent, 80);
+    expect(byLesson['علوم-٢']!.accuracyPercent, 0);
+    expect(() => byLesson.clear(), throwsUnsupportedError);
+  });
+
+  test('per-lesson breakdown rejects invalid attempts', () {
+    expect(
+      () => buildLessonBreakdown(const [
+        LearningAttempt(lessonId: 'math', correctAnswers: 1, totalQuestions: 2),
+        LearningAttempt(lessonId: 'science', correctAnswers: 4, totalQuestions: 3),
+      ]),
+      throwsFormatException,
+    );
+  });
+
 }
