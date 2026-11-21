@@ -250,4 +250,24 @@ void main() {
         throwsFormatException);
   });
 
+  test('revision threshold excludes mastered lessons and validates bounds', () {
+    final breakdown = buildLessonBreakdown(const [
+      LearningAttempt(lessonId: 'علوم', correctAnswers: 0, totalQuestions: 5),
+      LearningAttempt(lessonId: 'رياضيات', correctAnswers: 4, totalQuestions: 5),
+      LearningAttempt(lessonId: 'تاريخ', correctAnswers: 5, totalQuestions: 5),
+    ]);
+    expect(lessonsForRevision(breakdown, maximumAccuracyPercent: 80),
+        ['علوم', 'رياضيات']);
+    expect(lessonsForRevision(breakdown, maximumAccuracyPercent: 0),
+        ['علوم']);
+    expect(lessonsForRevision(breakdown, maximumAccuracyPercent: 100),
+        ['علوم', 'رياضيات', 'تاريخ']);
+    for (final invalid in [-1.0, 101.0, double.nan, double.infinity]) {
+      expect(
+          () => lessonsForRevision(breakdown,
+              maximumAccuracyPercent: invalid),
+          throwsFormatException);
+    }
+  });
+
 }
