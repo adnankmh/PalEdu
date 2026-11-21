@@ -77,4 +77,15 @@ void main() {
       throwsFormatException,
     );
   });
+  test('supports Arabic lesson identifiers without changing their identity', () {
+    final report = buildLearningReport(const [
+      LearningAttempt(lessonId: ' رياضيات-١ ', correctAnswers: 2, totalQuestions: 3),
+      LearningAttempt(lessonId: 'رياضيات-١', correctAnswers: 1, totalQuestions: 2),
+      LearningAttempt(lessonId: 'علوم-٢', correctAnswers: 2, totalQuestions: 2),
+    ]);
+    expect(report.attempts, 3);
+    expect(report.lessonsPracticed, 2);
+    expect(report.accuracyPercent, closeTo(100 * 5 / 7, 0.000001));
+  });
+
 }
