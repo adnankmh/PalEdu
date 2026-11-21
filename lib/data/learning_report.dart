@@ -46,7 +46,7 @@ LearningReport buildLearningReport(Iterable<LearningAttempt> attempts) {
     count++;
     correct += attempt.correctAnswers;
     total += attempt.totalQuestions;
-    lessonIds.add(attempt.lessonId);
+    lessonIds.add(attempt.lessonId.trim());
   }
   return LearningReport(
     attempts: count,
