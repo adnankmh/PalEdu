@@ -87,3 +87,35 @@ Map<String, LearningReport> buildLessonBreakdown(
       ),
   });
 }
+
+/// Returns the lessons with the lowest weighted accuracy first, so a local
+/// progress screen can suggest revision without transmitting learner data.
+/// Ties preserve the original order in [buildLessonBreakdown].
+/// [limit] must be non-negative; zero returns an empty, immutable list.
+List<String> lessonsForRevision(
+  Map<String, LearningReport> breakdown, {
+  int limit = 3,
+}) {
+  if (limit < 0) {
+    throw const FormatException('Invalid revision limit');
+  }
+  final entries = breakdown.entries.toList();
+  // Dart's List.sort is not guaranteed stable; retain the source position.
+  final positions = <String, int>{
+    for (var i = 0; i < entries.length; i++) entries[i].key: i,
+  };
+  entries.sort((a, b) {
+    final left = a.value.accuracyPercent;
+    final right = b.value.accuracyPercent;
+    if (left == null || right == null) {
+      return left == null && right == null
+          ? positions[a.key]!.compareTo(positions[b.key]!)
+          : left == null ? 1 : -1;
+    }
+    final order = left.compareTo(right);
+    return order != 0 ? order : positions[a.key]!.compareTo(positions[b.key]!);
+  });
+  return List<String>.unmodifiable(
+    entries.take(limit).map((entry) => entry.key),
+  );
+}
