@@ -160,5 +160,34 @@ void main() {
     expect(byLesson.values.every((row) => row.lessonsPracticed == 1), isTrue);
   });
 
+  test('large question counts retain exact weighted totals per lesson', () {
+    final attempts = <LearningAttempt>[
+      const LearningAttempt(
+        lessonId: 'رياضيات-١',
+        correctAnswers: 750000,
+        totalQuestions: 1000000,
+      ),
+      const LearningAttempt(
+        lessonId: ' رياضيات-١ ',
+        correctAnswers: 1,
+        totalQuestions: 1,
+      ),
+      const LearningAttempt(
+        lessonId: 'علوم-٢',
+        correctAnswers: 0,
+        totalQuestions: 9,
+      ),
+    ];
+    final overall = buildLearningReport(attempts);
+    final byLesson = buildLessonBreakdown(attempts);
+    expect(overall.attempts, 3);
+    expect(overall.lessonsPracticed, 2);
+    expect(overall.correctAnswers, 750001);
+    expect(overall.totalQuestions, 1000010);
+    expect(overall.accuracyPercent, closeTo(100 * 750001 / 1000010, 1e-9));
+    expect(byLesson['رياضيات-١']!.totalQuestions, 1000001);
+    expect(byLesson['رياضيات-١']!.correctAnswers, 750001);
+    expect(byLesson['علوم-٢']!.accuracyPercent, 0);
+  });
 
 }
