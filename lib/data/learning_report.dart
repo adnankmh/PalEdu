@@ -92,14 +92,21 @@ Map<String, LearningReport> buildLessonBreakdown(
 /// progress screen can suggest revision without transmitting learner data.
 /// Ties preserve the original order in [buildLessonBreakdown].
 /// [limit] must be non-negative; zero returns an empty, immutable list.
+/// [minimumAttempts] excludes lessons with too little practice evidence.
 List<String> lessonsForRevision(
   Map<String, LearningReport> breakdown, {
   int limit = 3,
+  int minimumAttempts = 1,
 }) {
   if (limit < 0) {
     throw const FormatException('Invalid revision limit');
   }
-  final entries = breakdown.entries.toList();
+  if (minimumAttempts < 1) {
+    throw const FormatException('Invalid minimum attempts');
+  }
+  final entries = breakdown.entries
+      .where((entry) => entry.value.attempts >= minimumAttempts)
+      .toList();
   // Dart's List.sort is not guaranteed stable; retain the source position.
   final positions = <String, int>{
     for (var i = 0; i < entries.length; i++) entries[i].key: i,
