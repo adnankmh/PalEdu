@@ -55,3 +55,21 @@ LearningReport buildLearningReport(Iterable<LearningAttempt> attempts) {
     totalQuestions: total,
   );
 }
+
+/// Local per-lesson totals for a teacher's or student's progress view.
+/// Keys are trimmed lesson IDs; no learner identity or private metadata is stored.
+Map<String, LearningReport> buildLessonBreakdown(
+  Iterable<LearningAttempt> attempts,
+) {
+  final grouped = <String, List<LearningAttempt>>{};
+  for (final attempt in attempts) {
+    // Apply the same strict validation as the aggregate report.
+    buildLearningReport([attempt]);
+    final id = attempt.lessonId.trim();
+    grouped.putIfAbsent(id, () => <LearningAttempt>[]).add(attempt);
+  }
+  return Map<String, LearningReport>.unmodifiable({
+    for (final entry in grouped.entries)
+      entry.key: buildLearningReport(entry.value),
+  });
+}
