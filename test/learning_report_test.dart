@@ -142,4 +142,23 @@ void main() {
     expect(byLesson['رياضيات-١']!.accuracyPercent, 50);
   });
 
+  test('breakdown totals reconcile with the aggregate report', () {
+    final attempts = <LearningAttempt>[
+      const LearningAttempt(lessonId: 'رياضيات-١', correctAnswers: 2, totalQuestions: 3),
+      const LearningAttempt(lessonId: 'علوم-٢', correctAnswers: 1, totalQuestions: 5),
+      const LearningAttempt(lessonId: ' رياضيات-١ ', correctAnswers: 4, totalQuestions: 4),
+    ];
+    final overall = buildLearningReport(attempts);
+    final byLesson = buildLessonBreakdown(attempts);
+    expect(byLesson.keys.toList(), ['رياضيات-١', 'علوم-٢']);
+    expect(byLesson.values.fold<int>(0, (sum, row) => sum + row.attempts),
+        overall.attempts);
+    expect(byLesson.values.fold<int>(0, (sum, row) => sum + row.correctAnswers),
+        overall.correctAnswers);
+    expect(byLesson.values.fold<int>(0, (sum, row) => sum + row.totalQuestions),
+        overall.totalQuestions);
+    expect(byLesson.values.every((row) => row.lessonsPracticed == 1), isTrue);
+  });
+
+
 }
