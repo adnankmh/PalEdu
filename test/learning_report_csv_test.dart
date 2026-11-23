@@ -35,6 +35,9 @@ void main() {
 
   test('neutralizes formulas behind invisible Unicode formatting marks', () {
     for (final prefix in [
+      '\u034F', // combining grapheme joiner
+      '\u061C', // Arabic letter mark
+      '\u180E', // Mongolian vowel separator
       '\u200B', // zero-width space
       '\u200E', // left-to-right mark
       '\u200F', // right-to-left mark
