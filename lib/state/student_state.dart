@@ -184,22 +184,24 @@ class StudentState extends ChangeNotifier {
         total <= 0 || total > 10000 || score < 0 || score > total) {
       throw ArgumentError('Invalid learning attempt');
     }
+    // Keep completion, review and report keys consistent for padded IDs.
+    final lessonId = id.trim();
     final timestamp=now??DateTime.now();
     final day=ReviewSchedule.dayKey(timestamp);
     practiceDays[day]=((practiceDays[day]??0)+1).clamp(1,999);
-    if (completed.add(id)) {
+    if (completed.add(lessonId)) {
       firstCompletionDays[day]=
         ((firstCompletionDays[day]??0)+1).clamp(1,999);
       xp += score * 10 + 10;
       await prefs.setStringList('completed', completed.toList()..sort());
       await prefs.setInt('xp', xp);
     }
-    reviews[id] = ReviewSchedule.next(
-      (score * 100 / total).round(), timestamp, previous: reviews[id]);
+    reviews[lessonId] = ReviewSchedule.next(
+      (score * 100 / total).round(), timestamp, previous: reviews[lessonId]);
     await prefs.setString('reviews_v1', jsonEncode(
       reviews.map((id, review) => MapEntry(id, review.toJson()))));
     await _saveActivity();
-    await _saveLearningAttempt(id, score, total);
+    await _saveLearningAttempt(lessonId, score, total);
     notifyListeners();
   }
 
