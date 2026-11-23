@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../data/reading_shelf.dart';
 import '../data/review_schedule.dart';
 import '../data/mistake_notebook.dart';
+import '../data/learning_report.dart';
 
 class StudentState extends ChangeNotifier {
   StudentState(this.prefs)
@@ -18,6 +19,7 @@ class StudentState extends ChangeNotifier {
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
         xp = prefs.getInt('xp') ?? 0 {
     mistakes=MistakeNotebook(prefs);
+    learningAttempts.addAll(_readLearningAttempts(prefs.getString('learning_attempts_v1')));
     practiceDays.addAll(_readDailyCount(prefs.getString('practice_days_v1')));
     firstCompletionDays.addAll(_readDailyCount(
       prefs.getString('lesson_first_days_v1')));
@@ -60,6 +62,41 @@ class StudentState extends ChangeNotifier {
   // Counts only, held on the device and erased with the local profile.
   final Map<String,int> practiceDays = {};
   final Map<String,int> firstCompletionDays = {};
+  final List<LearningAttempt> learningAttempts = [];
+  LearningReport get learningReport => buildLearningReport(learningAttempts);
+
+  static List<LearningAttempt> _readLearningAttempts(String? raw) {
+    if (raw == null) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return [];
+      final attempts = <LearningAttempt>[];
+      for (final item in decoded.take(200)) {
+        if (item is! Map) continue;
+        final id = item['lesson'];
+        final correct = item['correct'];
+        final total = item['total'];
+        if (id is! String || id.trim().isEmpty || id.length > 160 ||
+            correct is! int || total is! int || total < 1 || total > 10000 ||
+            correct < 0 || correct > total) continue;
+        attempts.add(LearningAttempt(
+          lessonId: id.trim(), correctAnswers: correct, totalQuestions: total));
+      }
+      return attempts;
+    } catch (_) { return []; }
+  }
+
+  Future<void> _saveLearningAttempt(String id, int score, int total) async {
+    if (id.trim().isEmpty || id.length > 160 || total > 10000) return;
+    learningAttempts.add(LearningAttempt(
+      lessonId: id.trim(), correctAnswers: score, totalQuestions: total));
+    if (learningAttempts.length > 200) learningAttempts.removeAt(0);
+    await prefs.setString('learning_attempts_v1', jsonEncode([
+      for (final attempt in learningAttempts)
+        {'lesson': attempt.lessonId, 'correct': attempt.correctAnswers,
+         'total': attempt.totalQuestions},
+    ]));
+  }
 
   static Map<String,int> _readDailyCount(String? raw) {
     if(raw==null)return {};
@@ -144,6 +181,7 @@ class StudentState extends ChangeNotifier {
     await prefs.setString('reviews_v1', jsonEncode(
       reviews.map((id, review) => MapEntry(id, review.toJson()))));
     await _saveActivity();
+    await _saveLearningAttempt(id, score, total);
     notifyListeners();
   }
 
@@ -184,7 +222,8 @@ class StudentState extends ChangeNotifier {
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
       'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1',
-      'animationsEnabled','practice_days_v1','lesson_first_days_v1']) {
+      'animationsEnabled','practice_days_v1','lesson_first_days_v1',
+      'learning_attempts_v1']) {
       await prefs.remove(key);
     }
     await ReadingShelf(prefs).clear();
@@ -199,7 +238,7 @@ class StudentState extends ChangeNotifier {
     }
     name=''; grade=1; track='عام'; darkMode=false; animationsEnabled=true; scale=1;
     completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear(); practiceDays.clear();
-    firstCompletionDays.clear();
+    firstCompletionDays.clear(); learningAttempts.clear();
     notifyListeners();
   }
 }
