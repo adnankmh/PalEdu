@@ -26,7 +26,7 @@ String _safeCsvCell(String value) {
   // Spreadsheet importers may ignore invisible formatting characters before
   // interpreting a formula. Check past them without changing the exported ID.
   final leadingIgnorable = RegExp(
-    r'^[\s\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]+',
+    r'^[\s\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]+',
   );
   final candidate = value.replaceFirst(leadingIgnorable, '');
   final dangerous = candidate.isNotEmpty && '=+-@'.contains(candidate[0]);
