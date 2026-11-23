@@ -71,8 +71,9 @@ class StudentState extends ChangeNotifier {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return [];
       final attempts = <LearningAttempt>[];
-      // Keep the newest entries when restoring an oversized legacy history.
-      for (final item in decoded.skip((decoded.length - 200).clamp(0, decoded.length))) {
+      // Scan newest first so corrupt tail entries cannot displace valid history.
+      for (final item in decoded.reversed) {
+        if (attempts.length >= 200) break;
         if (item is! Map) continue;
         final id = item['lesson'];
         final correct = item['correct'];
@@ -83,7 +84,7 @@ class StudentState extends ChangeNotifier {
         attempts.add(LearningAttempt(
           lessonId: id.trim(), correctAnswers: correct, totalQuestions: total));
       }
-      return attempts;
+      return attempts.reversed.toList();
     } catch (_) { return []; }
   }
 
