@@ -64,6 +64,21 @@ class StudentState extends ChangeNotifier {
   final Map<String,int> firstCompletionDays = {};
   final List<LearningAttempt> learningAttempts = [];
   LearningReport get learningReport => buildLearningReport(learningAttempts);
+  /// Read-only per-lesson statistics backed by completed local quiz attempts.
+  Map<String, LearningReport> get learningLessonBreakdown =>
+      buildLessonBreakdown(learningAttempts);
+
+  /// Local revision priorities; no student identity or network access.
+  List<String> revisionLessonIds({
+    int limit = 3,
+    int minimumAttempts = 1,
+    double maximumAccuracyPercent = 100,
+  }) => lessonsForRevision(
+    learningLessonBreakdown,
+    limit: limit,
+    minimumAttempts: minimumAttempts,
+    maximumAccuracyPercent: maximumAccuracyPercent,
+  );
 
   static List<LearningAttempt> _readLearningAttempts(String? raw) {
     if (raw == null) return [];
