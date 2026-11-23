@@ -83,4 +83,25 @@ void main() {
     expect(student.learningAttempts.first.lessonId, 'lesson-5');
     expect(StudentState(prefs).learningReport.attempts, 200);
   });
+  test('student exposes local lesson breakdown and revision priorities', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final student = StudentState(prefs);
+    await student.finish('رياضيات', 1, 4);
+    await student.finish('علوم', 0, 3);
+    await student.finish('رياضيات', 2, 4);
+    final breakdown = student.learningLessonBreakdown;
+    expect(breakdown['رياضيات']!.attempts, 2);
+    expect(breakdown['رياضيات']!.accuracyPercent, 37.5);
+    expect(breakdown['علوم']!.accuracyPercent, 0);
+    expect(student.revisionLessonIds(), ['علوم', 'رياضيات']);
+    expect(student.revisionLessonIds(minimumAttempts: 2), ['رياضيات']);
+    expect(() => breakdown.clear(), throwsUnsupportedError);
+    final restored = StudentState(prefs);
+    expect(restored.revisionLessonIds(limit: 1), ['علوم']);
+    await restored.erase();
+    expect(restored.learningLessonBreakdown, isEmpty);
+    expect(restored.revisionLessonIds(), isEmpty);
+  });
+
 }
