@@ -71,7 +71,8 @@ class StudentState extends ChangeNotifier {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return [];
       final attempts = <LearningAttempt>[];
-      for (final item in decoded.take(200)) {
+      // Keep the newest entries when restoring an oversized legacy history.
+      for (final item in decoded.skip((decoded.length - 200).clamp(0, decoded.length))) {
         if (item is! Map) continue;
         final id = item['lesson'];
         final correct = item['correct'];
