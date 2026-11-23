@@ -13,7 +13,7 @@ void main() {
         {'lesson': ' رياضيات-١ ', 'correct': 0, 'total': 1},
         {'lesson': 'علوم', 'correct': true, 'total': 1},
         {'lesson': 'علوم', 'correct': 1, 'total': 10001},
-        {'lesson': 'x' * 161, 'correct': 1, 'total': 1},
+        {'lesson': List.filled(161, 'x').join(), 'correct': 1, 'total': 1},
         {'lesson': 'علوم', 'correct': 1, 'total': 2},
       ]),
     });
