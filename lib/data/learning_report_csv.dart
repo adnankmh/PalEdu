@@ -23,9 +23,13 @@ String exportLearningReportCsv(LearningReportSnapshot snapshot) {
 /// Quoting alone does not prevent spreadsheet formula execution. Prefix any
 /// dangerous leading character (even after whitespace) with a literal quote.
 String _safeCsvCell(String value) {
-  final trimmed = value.trimLeft();
-  final dangerous = trimmed.isNotEmpty &&
-      ('=+-@'.contains(trimmed[0]) || trimmed[0] == '\t' || trimmed[0] == '\r');
+  // Spreadsheet importers may ignore invisible formatting characters before
+  // interpreting a formula. Check past them without changing the exported ID.
+  final leadingIgnorable = RegExp(
+    r'^[\s\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]+',
+  );
+  final candidate = value.replaceFirst(leadingIgnorable, '');
+  final dangerous = candidate.isNotEmpty && '=+-@'.contains(candidate[0]);
   final escaped = (dangerous ? "'$value" : value).replaceAll('"', '""');
   return '"$escaped"';
 }
