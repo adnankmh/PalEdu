@@ -42,6 +42,20 @@ void main() {
     expect(StudentState(prefs).learningReport.attempts, 0);
   });
 
+  test('oversized restored history keeps the newest 200 records', () async {
+    SharedPreferences.setMockInitialValues({
+      'learning_attempts_v1': jsonEncode([
+        for (var i = 0; i < 205; i++)
+          {'lesson': 'lesson-$i', 'correct': 1, 'total': 1},
+      ]),
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final restored = StudentState(prefs);
+    expect(restored.learningReport.attempts, 200);
+    expect(restored.learningAttempts.first.lessonId, 'lesson-5');
+    expect(restored.learningAttempts.last.lessonId, 'lesson-204');
+  });
+
   test('local history retains only the most recent 200 attempts', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
