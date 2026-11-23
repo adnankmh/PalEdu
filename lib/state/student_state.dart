@@ -163,8 +163,9 @@ class StudentState extends ChangeNotifier {
   }
 
   Future<void> finish(String id, int score, int total,{DateTime? now}) async {
-    if (total <= 0 || score < 0 || score > total) {
-      throw ArgumentError('Invalid score');
+    if (id.trim().isEmpty || id.length > 160 ||
+        total <= 0 || total > 10000 || score < 0 || score > total) {
+      throw ArgumentError('Invalid learning attempt');
     }
     final timestamp=now??DateTime.now();
     final day=ReviewSchedule.dayKey(timestamp);
