@@ -33,6 +33,41 @@ void main() {
     }
   });
 
+  test('neutralizes formulas behind invisible Unicode formatting marks', () {
+    for (final prefix in [
+      '\u200B', // zero-width space
+      '\u200E', // left-to-right mark
+      '\u200F', // right-to-left mark
+      '\u202E', // right-to-left override
+      '\u2060', // word joiner
+      '\u2066', // left-to-right isolate
+      '\uFEFF', // byte-order mark
+      '\u00A0', // non-breaking space
+      '\t',
+    ]) {
+      for (final operator in ['=', '+', '-', '@']) {
+        final id = '${prefix}${operator}SUM(1,2)';
+        final snapshot = buildLearningReportSnapshot([
+          LearningAttempt(lessonId: id, correctAnswers: 0, totalQuestions: 1),
+        ]);
+        final csv = exportLearningReportCsv(snapshot);
+        expect(csv, contains('"\'${id.trim()}"'));
+      }
+    }
+  });
+
+  test('does not alter ordinary Unicode lesson identifiers', () {
+    final snapshot = buildLearningReportSnapshot(const [
+      LearningAttempt(
+        lessonId: 'درس\u200F الرياضيات',
+        correctAnswers: 1,
+        totalQuestions: 1,
+      ),
+    ]);
+    expect(exportLearningReportCsv(snapshot),
+        contains('"درس\u200F الرياضيات",1,1,1,100.00'));
+  });
+
   test('empty report exports headers only', () {
     final snapshot = buildLearningReportSnapshot(const <LearningAttempt>[]);
     expect(exportLearningReportCsv(snapshot).split('\r\n').length, 2);
