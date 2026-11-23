@@ -29,7 +29,7 @@ void main() {
       final snapshot = buildLearningReportSnapshot([
         LearningAttempt(lessonId: id, correctAnswers: 0, totalQuestions: 1),
       ]);
-      expect(exportLearningReportCsv(snapshot), contains('"\'${id.trim()}"'));
+      expect(exportLearningReportCsv(snapshot), contains('"\'$id"'));
     }
   });
 
@@ -54,7 +54,7 @@ void main() {
           LearningAttempt(lessonId: id, correctAnswers: 0, totalQuestions: 1),
         ]);
         final csv = exportLearningReportCsv(snapshot);
-        expect(csv, contains('"\'${id.trim()}"'));
+        expect(csv, contains('"\'$id"'));
       }
     }
   });
