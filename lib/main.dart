@@ -9,6 +9,7 @@ import 'ui/royal_motion.dart';
 import 'ui/paledu_brand.dart';
 import 'ui/royal_student_home.dart';
 import 'ui/royal_achievements.dart';
+import 'ui/royal_learning_report.dart';
 import 'ui/royal_mistake_notebook.dart';
 import 'ui/royal_subject_library.dart';
 import 'ui/royal_lesson_reader.dart';
@@ -283,6 +284,22 @@ class _HomeShellState extends State<HomeShell> {
         onTap:()=>Navigator.push(context,MaterialPageRoute<void>(
           builder:(_)=>RoyalMistakeNotebook(
             student:s,lessons:widget.catalog.forStudent(s.grade,s.track)))))),
+      const SizedBox(height: 13),
+      Card(child: ListTile(
+        key: const Key('open-learning-report'),
+        leading: const Icon(Icons.insights_rounded, color: PColors.teal),
+        title: const Text('تقرير تعلمي',
+          style: TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: const Text('نتائجي • أداء المواد • أولويات المراجعة'),
+        trailing: const Icon(Icons.chevron_left_rounded),
+        onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+          builder: (reportContext) => RoyalLearningReportScreen(
+            student: s,
+            lessons: widget.catalog.forStudent(s.grade, s.track),
+            onLesson: (lesson) => openLesson(reportContext, lesson, s),
+          ),
+        )),
+      )),
       const SizedBox(height: 13),
       Card(child:ListTile(
         leading:const Icon(Icons.emoji_events_rounded,color:PColors.orange),

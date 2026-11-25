@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../data/reading_shelf.dart';
 import '../data/review_schedule.dart';
 import '../data/mistake_notebook.dart';
+import '../data/learning_report.dart';
 
 class StudentState extends ChangeNotifier {
   StudentState(this.prefs)
@@ -18,6 +19,7 @@ class StudentState extends ChangeNotifier {
         favourites = (prefs.getStringList('favourites') ?? []).toSet(),
         xp = prefs.getInt('xp') ?? 0 {
     mistakes=MistakeNotebook(prefs);
+    learningAttempts.addAll(_readLearningAttempts(prefs.getString('learning_attempts_v1')));
     practiceDays.addAll(_readDailyCount(prefs.getString('practice_days_v1')));
     firstCompletionDays.addAll(_readDailyCount(
       prefs.getString('lesson_first_days_v1')));
@@ -60,6 +62,58 @@ class StudentState extends ChangeNotifier {
   // Counts only, held on the device and erased with the local profile.
   final Map<String,int> practiceDays = {};
   final Map<String,int> firstCompletionDays = {};
+  final List<LearningAttempt> learningAttempts = [];
+  LearningReport get learningReport => buildLearningReport(learningAttempts);
+  /// Read-only per-lesson statistics backed by completed local quiz attempts.
+  Map<String, LearningReport> get learningLessonBreakdown =>
+      buildLessonBreakdown(learningAttempts);
+
+  /// Local revision priorities; no student identity or network access.
+  List<String> revisionLessonIds({
+    int limit = 3,
+    int minimumAttempts = 1,
+    double maximumAccuracyPercent = 100,
+  }) => lessonsForRevision(
+    learningLessonBreakdown,
+    limit: limit,
+    minimumAttempts: minimumAttempts,
+    maximumAccuracyPercent: maximumAccuracyPercent,
+  );
+
+  static List<LearningAttempt> _readLearningAttempts(String? raw) {
+    if (raw == null) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return [];
+      final attempts = <LearningAttempt>[];
+      // Scan newest first so corrupt tail entries cannot displace valid history.
+      for (final item in decoded.reversed) {
+        if (attempts.length >= 200) break;
+        if (item is! Map) continue;
+        final id = item['lesson'];
+        final correct = item['correct'];
+        final total = item['total'];
+        if (id is! String || id.trim().isEmpty || id.length > 160 ||
+            correct is! int || total is! int || total < 1 || total > 10000 ||
+            correct < 0 || correct > total) continue;
+        attempts.add(LearningAttempt(
+          lessonId: id.trim(), correctAnswers: correct, totalQuestions: total));
+      }
+      return attempts.reversed.toList();
+    } catch (_) { return []; }
+  }
+
+  Future<void> _saveLearningAttempt(String id, int score, int total) async {
+    if (id.trim().isEmpty || id.length > 160 || total > 10000) return;
+    learningAttempts.add(LearningAttempt(
+      lessonId: id.trim(), correctAnswers: score, totalQuestions: total));
+    if (learningAttempts.length > 200) learningAttempts.removeAt(0);
+    await prefs.setString('learning_attempts_v1', jsonEncode([
+      for (final attempt in learningAttempts)
+        {'lesson': attempt.lessonId, 'correct': attempt.correctAnswers,
+         'total': attempt.totalQuestions},
+    ]));
+  }
 
   static Map<String,int> _readDailyCount(String? raw) {
     if(raw==null)return {};
@@ -126,24 +180,28 @@ class StudentState extends ChangeNotifier {
   }
 
   Future<void> finish(String id, int score, int total,{DateTime? now}) async {
-    if (total <= 0 || score < 0 || score > total) {
-      throw ArgumentError('Invalid score');
+    if (id.trim().isEmpty || id.length > 160 ||
+        total <= 0 || total > 10000 || score < 0 || score > total) {
+      throw ArgumentError('Invalid learning attempt');
     }
+    // Keep completion, review and report keys consistent for padded IDs.
+    final lessonId = id.trim();
     final timestamp=now??DateTime.now();
     final day=ReviewSchedule.dayKey(timestamp);
     practiceDays[day]=((practiceDays[day]??0)+1).clamp(1,999);
-    if (completed.add(id)) {
+    if (completed.add(lessonId)) {
       firstCompletionDays[day]=
         ((firstCompletionDays[day]??0)+1).clamp(1,999);
       xp += score * 10 + 10;
       await prefs.setStringList('completed', completed.toList()..sort());
       await prefs.setInt('xp', xp);
     }
-    reviews[id] = ReviewSchedule.next(
-      (score * 100 / total).round(), timestamp, previous: reviews[id]);
+    reviews[lessonId] = ReviewSchedule.next(
+      (score * 100 / total).round(), timestamp, previous: reviews[lessonId]);
     await prefs.setString('reviews_v1', jsonEncode(
       reviews.map((id, review) => MapEntry(id, review.toJson()))));
     await _saveActivity();
+    await _saveLearningAttempt(lessonId, score, total);
     notifyListeners();
   }
 
@@ -184,7 +242,8 @@ class StudentState extends ChangeNotifier {
   Future<void> erase() async {
     for (final key in ['name','grade','track','darkMode','scale',
       'completed','favourites','xp','configured','reviews_v1','lesson_notes_v1',
-      'animationsEnabled','practice_days_v1','lesson_first_days_v1']) {
+      'animationsEnabled','practice_days_v1','lesson_first_days_v1',
+      'learning_attempts_v1']) {
       await prefs.remove(key);
     }
     await ReadingShelf(prefs).clear();
@@ -199,7 +258,7 @@ class StudentState extends ChangeNotifier {
     }
     name=''; grade=1; track='عام'; darkMode=false; animationsEnabled=true; scale=1;
     completed=<String>{}; favourites=<String>{}; xp=0; reviews.clear(); notes.clear(); practiceDays.clear();
-    firstCompletionDays.clear();
+    firstCompletionDays.clear(); learningAttempts.clear();
     notifyListeners();
   }
 }
