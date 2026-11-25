@@ -99,6 +99,27 @@ void main() {
     },
   );
 
+  testWidgets('subject mastery separates weighted quiz scores from completion',
+    (tester) async {
+      await student.finish('math', 1, 4);
+      await student.finish('math', 2, 2);
+      await student.finish('other-grade', 0, 100);
+      await show(tester, (_) {});
+      final mathMastery = find.byKey(const ValueKey('study-mastery-الرياضيات'));
+      final scienceMastery = find.byKey(const ValueKey('study-mastery-العلوم'));
+      await tester.scrollUntilVisible(mathMastery, 150);
+      expect(tester.widget<Text>(mathMastery).data, 'الإتقان: 50.0%');
+      await tester.scrollUntilVisible(scienceMastery, 100);
+      expect(tester.widget<Text>(scienceMastery).data, 'لم تُجرَ اختبارات بعد');
+      final mathSubject = find.byKey(const ValueKey('study-subject-الرياضيات'));
+      await tester.ensureVisible(mathSubject);
+      await tester.tap(mathSubject);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const Key('study-coverage')), 100);
+      expect(find.text('الدروس المكتملة: 1 / 1'), findsOneWidget);
+    },
+  );
+
   testWidgets('study coverage remains available before any quiz',
     (tester) async {
       await show(tester, (_) {});
@@ -113,7 +134,7 @@ void main() {
     (tester) async {
       await student.finish('math', 1, 2);
       await show(tester, (_) {});
-      final copy = find.widgetWithText(OutlinedButton, 'نسخ تقرير CSV');
+      final copy = find.byKey(const Key('report-copy-csv'));
       await tester.scrollUntilVisible(copy, 180);
       await tester.tap(copy);
       await tester.pumpAndSettle();
@@ -130,7 +151,7 @@ void main() {
     (tester) async {
       await student.finish('math', 1, 2);
       await show(tester, (_) {});
-      final copy = find.widgetWithText(OutlinedButton, 'نسخ تقرير CSV');
+      final copy = find.byKey(const Key('report-copy-csv'));
       await tester.scrollUntilVisible(copy, 200);
       await tester.tap(copy);
       await tester.pumpAndSettle();
