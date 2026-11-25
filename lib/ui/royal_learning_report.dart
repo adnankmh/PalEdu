@@ -92,7 +92,7 @@ class _RoyalLearningReportScreenState
       final overall = snapshot.overall;
       final revision = snapshot.revisionLessons(
         limit: 5,
-        maximumAccuracyPercent: 79.999,
+        maximumAccuracyPercent: 80,
       );
       return Scaffold(
         appBar: AppBar(title: const Text('تقرير تعلمي')),
@@ -178,7 +178,7 @@ class _RoyalLearningReportScreenState
                     const SizedBox(height: 16),
                     const RoyalSectionHeading(
                       title: 'أولويات المراجعة',
-                      subtitle: 'أقل من 80% في الاختبارات السابقة',
+                      subtitle: '80% أو أقل في الاختبارات السابقة',
                     ),
                     const SizedBox(height: 8),
                     if (revision.isEmpty)
