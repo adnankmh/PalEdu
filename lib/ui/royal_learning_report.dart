@@ -34,7 +34,24 @@ class _RoyalLearningReportScreenState
           ? '—'
           : '${report.accuracyPercent!.toStringAsFixed(1)}%';
 
+  Map<String, Lesson> scopedLessons(String? selectedSubject) => {
+    for (final lesson in widget.lessons)
+      if (selectedSubject == null || lesson.subject == selectedSubject)
+        lesson.id.trim(): lesson,
+  };
+
+  LearningReportSnapshot reportFor(Map<String, Lesson> lessons) =>
+      buildLearningReportSnapshot(
+        widget.student.learningAttempts.where(
+          (attempt) => lessons.containsKey(attempt.lessonId.trim()),
+        ),
+      );
+
   Future<void> copyReport(LearningReportSnapshot snapshot) async {
+    final csv = exportLearningReportCsv(snapshot);
+    final grade = widget.student.grade;
+    final track = widget.student.track;
+    final selectedSubject = subject;
     final consent = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -56,10 +73,19 @@ class _RoyalLearningReportScreenState
       ),
     );
     if (consent != true || !mounted) return;
-    try {
-      await Clipboard.setData(
-        ClipboardData(text: exportLearningReportCsv(snapshot)),
+    // A report must not be copied after its data or profile has changed
+    // while the confirmation dialog was open.
+    if (grade != widget.student.grade ||
+        track != widget.student.track ||
+        selectedSubject != subject ||
+        csv != exportLearningReportCsv(reportFor(scopedLessons(subject)))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تغيّر التقرير، أعد طلب النسخ')),
       );
+      return;
+    }
+    try {
+      await Clipboard.setData(ClipboardData(text: csv));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم نسخ التقرير بصيغة CSV')),
@@ -79,16 +105,13 @@ class _RoyalLearningReportScreenState
       final subjects = widget.lessons.map((l) => l.subject).toSet().toList()
         ..sort();
       final activeSubject = subjects.contains(subject) ? subject : null;
-      final lessons = <String, Lesson>{
-        for (final lesson in widget.lessons)
-          if (activeSubject == null || lesson.subject == activeSubject)
-            lesson.id.trim(): lesson,
-      };
-      final snapshot = buildLearningReportSnapshot(
-        widget.student.learningAttempts.where(
-          (attempt) => lessons.containsKey(attempt.lessonId.trim()),
-        ),
-      );
+      final lessons = scopedLessons(activeSubject);
+      final snapshot = reportFor(lessons);
+      final completedCount = lessons.keys.where(widget.student.done).length;
+      final pending = lessons.entries
+          .where((entry) => !widget.student.done(entry.key))
+          .map((entry) => entry.value)
+          .toList();
       final overall = snapshot.overall;
       final revision = snapshot.revisionLessons(
         limit: 5,
@@ -224,6 +247,64 @@ class _RoyalLearningReportScreenState
                       label: const Text('نسخ تقرير CSV'),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  const RoyalSectionHeading(
+                    title: 'خطة الدراسة',
+                    subtitle: 'إكمال الدروس يختلف عن إتقان الاختبارات',
+                  ),
+                  const SizedBox(height: 8),
+                  Panel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('الدروس المكتملة: $completedCount / ${lessons.length}',
+                          key: const Key('study-coverage')),
+                        const SizedBox(height: 10),
+                        if (lessons.isNotEmpty)
+                          LinearProgressIndicator(
+                            value: completedCount / lessons.length,
+                            minHeight: 9,
+                          ),
+                        const SizedBox(height: 10),
+                        Text('الدروس المتبقية: ${pending.length}'),
+                        if (lessons.isEmpty)
+                          const Text('لا توجد دروس متاحة لهذا الاختيار.')
+                        else if (pending.isEmpty)
+                          const Text('أكملت جميع الدروس المتاحة لهذا الاختيار.')
+                        else ...[
+                          const SizedBox(height: 12),
+                          Text('الدرس التالي المقترح: ${pending.first.title}'),
+                          const SizedBox(height: 8),
+                          FilledButton.icon(
+                            key: const Key('study-next-lesson'),
+                            onPressed: () => widget.onLesson(pending.first),
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: const Text('متابعة الدراسة'),
+                          ),
+                        ],
+                        if (activeSubject == null && subjects.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text('التقدم حسب المادة',
+                            style: Theme.of(context).textTheme.titleMedium),
+                          for (final item in subjects)
+                            Builder(builder: (context) {
+                              final ids = scopedLessons(item).keys;
+                              final done = ids.where(widget.student.done).length;
+                              return ListTile(
+                                key: ValueKey('study-subject-$item'),
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(item),
+                                subtitle: LinearProgressIndicator(
+                                  value: ids.isEmpty ? 0 : done / ids.length,
+                                ),
+                                trailing: Text('$done / ${ids.length}'),
+                                onTap: () => setState(() => subject = item),
+                              );
+                            }),
+                        ],
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'هذا التقرير محلي وليس كشف درجات رسمياً. '
