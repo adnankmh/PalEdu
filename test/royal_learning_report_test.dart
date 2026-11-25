@@ -74,6 +74,58 @@ void main() {
     },
   );
 
+  testWidgets('study plan shows actual coverage and opens the next scoped lesson',
+    (tester) async {
+      await student.finish('math', 1, 4);
+      await student.finish('other-grade', 1, 1);
+      Lesson? selected;
+      await show(tester, (value) => selected = value);
+      final coverage = find.byKey(const Key('study-coverage'));
+      final next = find.byKey(const Key('study-next-lesson'));
+      await tester.scrollUntilVisible(coverage, 180);
+      expect(find.text('الدروس المكتملة: 1 / 2'), findsOneWidget);
+      expect(find.text('الدروس المتبقية: 1'), findsOneWidget);
+      await tester.scrollUntilVisible(next, 120);
+      await tester.tap(next);
+      expect(selected, same(science));
+      final mathSubject = find.byKey(const ValueKey('study-subject-الرياضيات'));
+      await tester.scrollUntilVisible(mathSubject, 120);
+      await tester.tap(mathSubject);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(coverage, -120);
+      expect(find.text('الدروس المكتملة: 1 / 1'), findsOneWidget);
+      expect(find.text('أكملت جميع الدروس المتاحة لهذا الاختيار.'), findsOneWidget);
+      expect(next, findsNothing);
+    },
+  );
+
+  testWidgets('study coverage remains available before any quiz',
+    (tester) async {
+      await show(tester, (_) {});
+      final coverage = find.byKey(const Key('study-coverage'));
+      await tester.scrollUntilVisible(coverage, 120);
+      expect(find.text('الدروس المكتملة: 0 / 2'), findsOneWidget);
+      expect(find.text('الدروس المتبقية: 2'), findsOneWidget);
+    },
+  );
+
+  testWidgets('CSV consent expires when local profile data is erased',
+    (tester) async {
+      await student.finish('math', 1, 2);
+      await show(tester, (_) {});
+      final copy = find.widgetWithText(OutlinedButton, 'نسخ تقرير CSV');
+      await tester.scrollUntilVisible(copy, 180);
+      await tester.tap(copy);
+      await tester.pumpAndSettle();
+      await student.erase();
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'نسخ'));
+      await tester.pumpAndSettle();
+      expect(find.text('تغيّر التقرير، أعد طلب النسخ'), findsOneWidget);
+      expect(find.text('تم نسخ التقرير بصيغة CSV'), findsNothing);
+    },
+  );
+
   testWidgets('CSV sharing requests consent and can be cancelled',
     (tester) async {
       await student.finish('math', 1, 2);
