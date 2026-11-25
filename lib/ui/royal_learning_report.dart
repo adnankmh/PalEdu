@@ -47,11 +47,15 @@ class _RoyalLearningReportScreenState
         ),
       );
 
-  Future<void> copyReport(LearningReportSnapshot snapshot) async {
+  Future<void> copyReport(
+    LearningReportSnapshot snapshot,
+    String? activeSubject,
+  ) async {
     final csv = exportLearningReportCsv(snapshot);
     final grade = widget.student.grade;
     final track = widget.student.track;
-    final selectedSubject = subject;
+    final selectedSubject = activeSubject;
+    final profileName = widget.student.name;
     final consent = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,8 +81,11 @@ class _RoyalLearningReportScreenState
     // while the confirmation dialog was open.
     if (grade != widget.student.grade ||
         track != widget.student.track ||
-        selectedSubject != subject ||
-        csv != exportLearningReportCsv(reportFor(scopedLessons(subject)))) {
+        profileName != widget.student.name ||
+        selectedSubject != effectiveSubject ||
+        csv != exportLearningReportCsv(
+          reportFor(scopedLessons(effectiveSubject)),
+        )) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تغيّر التقرير، أعد طلب النسخ')),
       );
@@ -98,13 +105,18 @@ class _RoyalLearningReportScreenState
     }
   }
 
+  String? get effectiveSubject =>
+      widget.lessons.any((lesson) => lesson.subject == subject)
+          ? subject
+          : null;
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.student,
     builder: (context, _) {
       final subjects = widget.lessons.map((l) => l.subject).toSet().toList()
         ..sort();
-      final activeSubject = subjects.contains(subject) ? subject : null;
+      final activeSubject = effectiveSubject;
       final lessons = scopedLessons(activeSubject);
       final snapshot = reportFor(lessons);
       final completedCount = lessons.keys.where(widget.student.done).length;
@@ -242,7 +254,8 @@ class _RoyalLearningReportScreenState
                       ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: () => copyReport(snapshot),
+                      key: const Key('report-copy-csv'),
+                      onPressed: () => copyReport(snapshot, activeSubject),
                       icon: const Icon(Icons.copy_rounded),
                       label: const Text('نسخ تقرير CSV'),
                     ),
@@ -288,14 +301,29 @@ class _RoyalLearningReportScreenState
                             style: Theme.of(context).textTheme.titleMedium),
                           for (final item in subjects)
                             Builder(builder: (context) {
-                              final ids = scopedLessons(item).keys;
+                              final subjectLessons = scopedLessons(item);
+                              final ids = subjectLessons.keys;
                               final done = ids.where(widget.student.done).length;
+                              final mastery = reportFor(subjectLessons).overall;
                               return ListTile(
                                 key: ValueKey('study-subject-$item'),
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(item),
-                                subtitle: LinearProgressIndicator(
-                                  value: ids.isEmpty ? 0 : done / ids.length,
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    LinearProgressIndicator(
+                                      value: ids.isEmpty ? 0 : done / ids.length,
+                                      semanticsLabel: 'إكمال الدروس',
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      mastery.attempts == 0
+                                          ? 'لم تُجرَ اختبارات بعد'
+                                          : 'الإتقان: ${accuracy(mastery)}',
+                                      key: ValueKey('study-mastery-$item'),
+                                    ),
+                                  ],
                                 ),
                                 trailing: Text('$done / ${ids.length}'),
                                 onTap: () => setState(() => subject = item),
